@@ -65,18 +65,16 @@ const helper = {
         rightEye.position.z = -0.4;
         pacman.add(eyesBase);
 
-
-
-
         const pacmanGroup = new THREE.Group();
         pacmanGroup.add(pacman);
         pacmanGroup.add(camera);
         pacmanGroup.translateY(1.5);
+        pacmanGroup.rotateY(Math.PI);
         pacmanGroup.name = "pacman";
 
-        //camera.position.set(0, 5, 5);
-        camera.translateY(10);
-        camera.translateZ(20);
+        camera.position.set(0, 5, 10);
+        //camera.translateY(10);
+        //camera.translateZ(20);
         camera.lookAt(pacmanGroup.position);
         camera.rotation.x = 0;
         

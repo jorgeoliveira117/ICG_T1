@@ -34,8 +34,12 @@ window.addEventListener('resize', resizeWindow);
 
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false;
+var mouseDown = false, mouseUp = true;
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
+document.addEventListener("mousedown", onMouseDown);
+document.addEventListener("mouseup", onMouseUp);
+document.onmousemove = handleMouseMove;
 
 // Update render image size and camera aspect when the window is resized
 function resizeWindow(eventParam) {
@@ -81,6 +85,14 @@ function onDocumentKeyUp(event) {
     }
 }
 
+function onMouseDown(){
+    mouseDown = true;
+    mouseUp = false;
+}
+function onMouseUp(){
+    mouseUp = true;
+    mouseDown = false;
+}
 //////////////////////////////////////////////////////////////////
 
 
@@ -90,8 +102,8 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // Create a ground plane
     // ************************** //
-    const planeGeometry = new THREE.PlaneGeometry(20, 20);
-    const planeMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(200, 200, 200)', side: THREE.DoubleSide });
+    const planeGeometry = new THREE.PlaneGeometry(40, 40);
+    const planeMaterial = new THREE.MeshPhongMaterial({ color: 0x362f31, side: THREE.DoubleSide });
     const planeObject = new THREE.Mesh(planeGeometry, planeMaterial);
     sceneGraph.add(planeObject);
 
@@ -100,19 +112,71 @@ function load3DObjects(sceneGraph) {
     // Set shadow property
     planeObject.receiveShadow = true;
 
+    // ************************** //
+    // Wall
+    // ************************** //
+    const wallGeometry = new THREE.BoxGeometry( 5, 6, 5 );
+    const wallMaterial = new THREE.MeshToonMaterial( {color: 0x1d1957} );
+    const wall = new THREE.Mesh( wallGeometry, wallMaterial );
+    wall.position.set(5, 3, 5);
+    wall.receiveShadow = true;
+    wall.name = "wall#1";
+    sceneGraph.add( wall );
+    const wall2 = new THREE.Mesh( wallGeometry, wallMaterial );
+    wall2.position.set(5, 3, 10);
+    const wall3 = new THREE.Mesh( wallGeometry, wallMaterial );
+    wall3.position.set(-5, 3, 5);
+    const wall4 = new THREE.Mesh( wallGeometry, wallMaterial );
+    wall4.position.set(-5, 3, 10);
+    const wall5 = new THREE.Mesh( wallGeometry, wallMaterial );
+    wall5.position.set(200, 3, 2);
+    sceneGraph.add( wall2 );
+    sceneGraph.add( wall3 );
+    sceneGraph.add( wall4 );
+    sceneGraph.add( wall5 );
+
+    // ************************** //
+    // Point
+    // ************************** //
+    const pointGeometry = new THREE.SphereGeometry( 0.5, 16, 8 );
+    const pointMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(0,0,135)', emissive: 'rgb(0,200,255)', specular: 'rgb(255,255,255)', shininess: 120 });
+    const point = new THREE.Mesh( pointGeometry, pointMaterial );
+    point.position.set(0, 1.5, 2);
+    sceneGraph.add( point );
+
+
 
 }
+
+var mouseX = 0;
+var mouseY = 0;
+var sensitivityX = 0.005;
+var axisVertical = new THREE.Vector3(0, 1, 0);
+var axis = new THREE.Vector3(0, 0, 1);
+
+// Adapted from how Unity Engine works for a third person camera
+function handleMouseMove(e) {
+    e.preventDefault();
+
+    if(mouseDown){
+        var deltaY = e.clientY - mouseY;
+        mouseY = e.clientY;
+        pacman.rotateOnAxis(axis, deltaY * sensitivityX);
+    }
+   
+    // Get the difference between the previous coordinates
+    var deltaX = e.clientX - mouseX;
+    mouseX = e.clientX;
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+}
+
 
 // Displacement value
 
 var delta;
-
-
 var dispX = 10, dispZ = 10;
 var lastTime = 0;
-
-// Goes from 0 to 2*Math.PI
-
 
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
@@ -167,18 +231,19 @@ function computeFrame(time) {
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     
 
-    if (keyD && pacman.position.x < 5) {
+    if (keyD ) {
         pacman.translateX(dispX * delta);
     }
-    if (keyW && pacman.position.z > -5) {
+    if (keyW ) {
         pacman.translateZ(-dispZ * delta);
     }
-    if (keyA && pacman.position.x > -5) {
+    if (keyA ) {
         pacman.translateX(-dispX * delta);
     }
-    if (keyS && pacman.position.z < 5) {
+    if (keyS ) {
         pacman.translateZ(dispZ * delta);
     }
+
     sceneElements.camera.lookAt(pacman.position);
     // Rendering
     helper.render(sceneElements);

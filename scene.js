@@ -138,11 +138,31 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // Point
     // ************************** //
-    const pointGeometry = new THREE.SphereGeometry( 0.5, 16, 8 );
+    const pointGeometry = new THREE.SphereGeometry( 0.25, 16, 8 );
     const pointMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(0,0,135)', emissive: 'rgb(0,200,255)', specular: 'rgb(255,255,255)', shininess: 120 });
     const point = new THREE.Mesh( pointGeometry, pointMaterial );
-    point.position.set(0, 1.5, 2);
+    point.castShadow = true;
+    point.position.set(-10, 1.5, 3);
     sceneGraph.add( point );
+    // ************************** //
+    // PowerUp
+    // ************************** //
+    const powerUpGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
+    const powerUpMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(255,200,0)', emissive: 'rgb(255,240,75)', specular: 'rgb(255,255,255)', shininess: 20 });
+    const powerUp = new THREE.Mesh( powerUpGeometry, powerUpMaterial );
+    powerUp.position.set(10, 1.5, 3);
+    powerUp.castShadow = true;
+    
+    const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
+    //light.position.set( 50, 50, 50 );
+    powerUp.add( light );
+    
+    sceneGraph.add( powerUp );
+
+    // ************************** //
+    // Ghost
+    // ************************** //
+    
 
 
 

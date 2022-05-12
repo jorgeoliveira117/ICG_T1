@@ -241,31 +241,40 @@ const models = {
         ghost.add(ghostScaredFace);
     
         // Scared properties 
-        ghostBody.material = ghostScaredMaterial;
-        ghostHead.material = ghostScaredMaterial;
-        ghostTail.traverse((child) => {
-            child.material = ghostScaredMaterial;
-        })
-        ghostSkirt.traverse((child) => {
-            child.material = ghostScaredMaterial;
-        })
-        ghostRightEye.visible = false;
-        ghostLeftEye.visible = false;
-        ghostScaredFace.visible = true;
+        ghost.setScared = function() {
+            ghostBody.material = ghostScaredMaterial;
+            ghostHead.material = ghostScaredMaterial;
+            ghostTail.traverse((child) => {
+                child.material = ghostScaredMaterial;
+            })
+            ghostSkirt.traverse((child) => {
+                child.material = ghostScaredMaterial;
+            })
+            ghostRightEye.visible = false;
+            ghostLeftEye.visible = false;
+            ghostScaredFace.visible = true;
+        }
         
+
+
     
         // Not scared properties
-        ghostBody.material = ghostMaterial;
-        ghostHead.material = ghostMaterial;
-        ghostTail.traverse((child) => {
-            child.material = ghostTailSphereMaterial;
-        })
-        ghostSkirt.traverse((child) => {
-            child.material = ghostMaterial;
-        })
-        ghostRightEye.visible = true;
-        ghostLeftEye.visible = true;
-        ghostScaredFace.visible = false;
+        ghost.setNotScared = function() {
+            ghostBody.material = ghostMaterial;
+            ghostHead.material = ghostMaterial;
+            ghostTail.traverse((child) => {
+                child.material = ghostTailSphereMaterial;
+            })
+            ghostSkirt.traverse((child) => {
+                child.material = ghostMaterial;
+            })
+            ghostRightEye.visible = true;
+            ghostLeftEye.visible = true;
+            ghostScaredFace.visible = false;
+        }
+
+        ghost.setNotScared();
+        
     
         const ghostHitboxHelper = new THREE.BoxHelper( ghost, 0x00ff00 );
         ghostHitboxHelper.name = ghost.name + "_hitboxHelper";

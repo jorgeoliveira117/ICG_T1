@@ -24,8 +24,8 @@ const ghosts = [];
 const GHOST_COLORS = [
     [0xF80404,0xA30404],
     [0xF8ACF4,0xA3ACF4],
-    [0x08F8F4,0x08F8A0],
-    [0xF8AC4C,0xA3AC4C]
+    [0x08F8F4,0x059997],
+    [0xFF8E00,0xA65D02]
 ]
 
 // Map properties
@@ -302,12 +302,14 @@ function loadLevel(levelName){
         ghost.translateX(2*ghostN);
         //ghost.position.copy(ghostSpawnPoint);
         ghost.rotateY(Math.PI);
+        ghosts.push(ghost);
 
         // Hitbox
         const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
         ghostHitbox.name = ghost.name + "_hitbox";
         ghostHitbox.setFromObject(ghost);
         ghostHitboxes.push(ghostHitbox);
+
     });
 
     gameIsReady = true;
@@ -387,22 +389,145 @@ let dir = new THREE.Vector3();
 let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
 let distance = cameraWorldPos.distanceTo(cameraDefaultPos);
 let intersects = [];
+const wallCollision = {front: false, left: false, right: false, back: false}
 
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
-    /*
     
-    
-    ADD GAME IS READY CONDITION
-
-
-    */
-    
-
     // ************************** //
     // Pacman
     // ************************** //
+    
+
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    checkWalls();
+    if (keyD && !wallCollision.right) {
+        pacman.translateX(pacman.MOV_SPEED_X * delta);
+    }
+    if (keyW && !wallCollision.front) {
+        pacman.translateZ(-pacman.MOV_SPEED_Z * delta);
+    }
+    if (keyA && !wallCollision.left) {
+        pacman.translateX(-pacman.MOV_SPEED_X * delta);
+    }
+    if (keyS && !wallCollision.back) {
+        pacman.translateZ(pacman.MOV_SPEED_Z * delta);
+    }
+    sceneElements.camera.lookAt(pacman.position);
+
+    // ************************** //
+    // Camera
+    // ************************** //
+    // Adapted from
+    // https://sbcode.net/threejs/raycaster2/
+    /*
+    sceneElements.camera.getWorldPosition(cameraWorldPos);
+    dir.subVectors(cameraWorldPos, pacman.position).normalize();
+    raycaster.set(pacman.position, dir);
+    intersects = raycaster.intersectObjects(wallMeshes, false);
+    if (intersects.length > 0) {
+        if (intersects[0].distance < distance) {
+            sceneElements.sceneGraph.attach(sceneElements.camera);
+            sceneElements.camera.position.copy(intersects[0].point);
+            pacman.attach(sceneElements.camera);
+        }else{
+            sceneElements.camera.position.copy(cameraDefaultPos);
+        }
+    }else{
+        sceneElements.camera.position.copy(cameraDefaultPos);
+    }
+    
+    */
+    checkCollisions();
+    animatePacman();
+    animateGhosts();
+
+    // Rendering
+    helper.render(sceneElements);
+
+    // Update control of the camera
+    sceneElements.control.update();
+
+    // Call for the next frame
+    requestAnimationFrame(computeFrame);
+}
+
+function checkCollisions(){
+
+    // Update Pacman's Hitbox
+    const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
+    pacmanHitbox.setFromObject(pacmanModel);
+    pacmanModel.geometry.computeBoundingSphere();
+    pacmanModel.geometry.boundingSphere.getBoundingBox(pacmanHitbox)
+    pacmanHitbox.applyMatrix4(pacmanModel.matrixWorld);
+    
+    // Update ghost hitboxes and check collision
+    ghostHitboxes.forEach((ghostHitbox) => {
+        const ghostName = ghostHitbox.name.substring(0, ghostHitbox.name.length - 7);
+        const ghost = sceneElements.sceneGraph.getObjectByName(ghostName);
+        const ghostBody = sceneElements.sceneGraph.getObjectByName(ghostName + "_body");
+        ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
+        if(pacmanHitbox.intersectsBox(ghostHitbox)){
+            console.log("Collided with " + ghostName);
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    });
+
+    // Check for collision with points
+    pointHitboxes.forEach((pointHitbox) =>{
+        const pointName = pointHitbox.name.substring(0, pointHitbox.name.length - 7);
+        if(pacmanHitbox.intersectsBox(pointHitbox)){
+            console.log("Collided with " + pointName);
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    });
+
+    // Check for collision with power ups
+    powerUpHitboxes.forEach((powerUpHitbox) =>{
+        const powerUpName = powerUpHitbox.name.substring(0, powerUpHitbox.name.length - 7);
+        if(pacmanHitbox.intersectsBox(powerUpHitbox)){
+            console.log("Collided with " + powerUpName);
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    });
+}
+
+function checkWalls(){
+
+}
+
+function getCoords(x, z){
+
+}
+
+function animateGhosts(){
+    ghosts.forEach((ghost) => {
+        const ghostTail = sceneElements.sceneGraph.getObjectByName(ghost.name + "_tail");
+        ghostTail.traverse( (child) => {
+            if(child.position.y <= ghostTail.MIN_HEIGHT){
+                child.position.y = 0;
+                child.scale.set(1, 1, 1);
+            }
+            child.translateY((Math.random()*ghostTail.MAX_SPEED + ghostTail.MIN_SPEED) * delta * -1);
+            child.scale.addScalar(ghostTail.SCALE_DOWN_SPEED*delta);
+        })
+        ghost.position.y += ghost.BOB_SPEED * delta;
+        if(ghost.position.y <= ghost.BOB_MIN_HEIGHT){
+            ghost.BOB_SPEED *= -1;
+            ghost.position.y = ghost.BOB_MIN_HEIGHT;
+        }
+        else if(ghost.position.y >= ghost.BOB_MAX_HEIGHT){
+            ghost.BOB_SPEED *= -1;
+            ghost.position.y = ghost.BOB_MAX_HEIGHT;
+        }
+    })
+}
+
+function animatePacman(){
     const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
     
     // Mouth animation
@@ -436,120 +561,4 @@ function computeFrame(time) {
         pacmanModel.bobSpeed *= -1;
         pacmanModel.position.y = pacmanModel.BOB_MAX_HEIGHT;
     }
-
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    
-    if (keyD ) {
-        pacman.translateX(pacman.MOV_SPEED_X * delta);
-    }
-    if (keyW ) {
-        pacman.translateZ(-pacman.MOV_SPEED_Z * delta);
-    }
-    if (keyA ) {
-        pacman.translateX(-pacman.MOV_SPEED_X * delta);
-    }
-    if (keyS ) {
-        pacman.translateZ(pacman.MOV_SPEED_Z * delta);
-    }
-    sceneElements.camera.lookAt(pacman.position);
-
-    // ************************** //
-    // Camera
-    // ************************** //
-    // Adapted from
-    // https://sbcode.net/threejs/raycaster2/
-    /*
-    sceneElements.camera.getWorldPosition(cameraWorldPos);
-    dir.subVectors(cameraWorldPos, pacman.position).normalize();
-    raycaster.set(pacman.position, dir);
-    intersects = raycaster.intersectObjects(wallMeshes, false);
-    if (intersects.length > 0) {
-        if (intersects[0].distance < distance) {
-            sceneElements.sceneGraph.attach(sceneElements.camera);
-            sceneElements.camera.position.copy(intersects[0].point);
-            pacman.attach(sceneElements.camera);
-        }else{
-            sceneElements.camera.position.copy(cameraDefaultPos);
-        }
-    }else{
-        sceneElements.camera.position.copy(cameraDefaultPos);
-    }
-    
-    */
-    checkCollisions();
-    // ************************** //
-    // Ghost
-    // ************************** //
-    const ghost = sceneElements.sceneGraph.getObjectByName("ghost_1");
-    const ghostTail = sceneElements.sceneGraph.getObjectByName("ghost_1_tail");
-    ghostTail.traverse( (child) => {
-        if(child.position.y <= ghostTail.MIN_HEIGHT){
-            child.position.y = 0;
-            child.scale.set(1, 1, 1);
-        }
-        child.translateY((Math.random()*ghostTail.MAX_SPEED + ghostTail.MIN_SPEED) * delta * -1);
-        child.scale.addScalar(ghostTail.SCALE_DOWN_SPEED*delta);
-    })
-    ghost.position.y += ghost.BOB_SPEED * delta;
-    if(ghost.position.y <= ghost.BOB_MIN_HEIGHT){
-        ghost.BOB_SPEED *= -1;
-        ghost.position.y = ghost.BOB_MIN_HEIGHT;
-    }
-    else if(ghost.position.y >= ghost.BOB_MAX_HEIGHT){
-        ghost.BOB_SPEED *= -1;
-        ghost.position.y = ghost.BOB_MAX_HEIGHT;
-    }
-
-
-    // Rendering
-    helper.render(sceneElements);
-
-    // NEW --- Update control of the camera
-    sceneElements.control.update();
-
-    // Call for the next frame
-    requestAnimationFrame(computeFrame);
-}
-
-function checkCollisions(){
-
-    const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
-
-    
-
-    pacmanHitbox.setFromObject(pacmanModel);
-    pacmanModel.geometry.computeBoundingSphere();
-    pacmanModel.geometry.boundingSphere.getBoundingBox(pacmanHitbox)
-    pacmanHitbox.applyMatrix4(pacmanModel.matrixWorld);
-    
-    const ghost = sceneElements.sceneGraph.getObjectByName("ghost_1");
-    const ghostHitbox = ghostHitboxes.find((hitbox) => hitbox.name === "ghost_1_hitbox");
-    const ghostBody = sceneElements.sceneGraph.getObjectByName("ghost_1_body");
-    if(ghostHitbox){
-        ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
-        if(pacmanHitbox.intersectsBox(ghostHitbox)){
-            console.log("yes on ghost ");
-            // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
-        }
-    }
-
-    const pointHitbox = pointHitboxes.find((hitbox) => hitbox.name === "point_1_hitbox");
-    if(pointHitbox){
-        if(pacmanHitbox.intersectsBox(pointHitbox)){
-            console.log("yes on point");
-            // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
-        }
-    }
-
-    const powerUpHitbox = powerUpHitboxes.find((hitbox) => hitbox.name === "powerup_1_hitbox");
-    if(powerUpHitbox){
-        if(pacmanHitbox.intersectsBox(powerUpHitbox)){
-            console.log("yes on power up");
-            // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
-        }
-    }
-
 }

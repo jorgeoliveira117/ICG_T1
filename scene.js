@@ -1,12 +1,40 @@
 "use strict";
 
-//  Adapted from Daniel Rohmer tutorial
-//
-// 		https://imagecomputing.net/damien.rohmer/teaching/2019_2020/semester_1/MPRI_2-39/practice/threejs/content/000_threejs_tutorial/index.html
-//
-//  And from an example by Pedro Iglésias
-//
-// 		J. Madeira - April 2021
+// Taken from
+// https://github.com/butchler/Pacman-3D/blob/gh-pages/game.js
+var LEVEL = [
+    '# # # # # # # # # # # # # # # # # # # # # # # # # # # #',
+    '# . . . . . . . . . . . . # # . . . . . . . . . . . . #',
+    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
+    '# o # # # # . # # # # # . # # . # # # # # . # # # # o #',
+    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
+    '# . . . . . . . . . . . . . . . . . . . . . . . . . . #',
+    '# . # # # # . # # . # # # # # # # # . # # . # # # # . #',
+    '# . # # # # . # # . # # # # # # # # . # # . # # # # . #',
+    '# . . . . . . # # . . . . # # . . . . # # . . . . . . #',
+    '# # # # # # . # # # # #   # #   # # # # # . # # # # # #',
+    '          # . # # # # #   # #   # # # # # . #          ',
+    '          # . # #         G           # # . #          ',
+    '          # . # #   # # # # # # # #   # # . #          ',
+    '# # # # # # . # #   #             #   # # . # # # # # #',
+    '            .       #             #       .            ',
+    '# # # # # # . # #   #             #   # # . # # # # # #',
+    '          # . # #   # # # # # # # #   # # . #          ',
+    '          # . # #                     # # . #          ',
+    '          # . # #   # # # # # # # #   # # . #          ',
+    '# # # # # # . # #   # # # # # # # #   # # . # # # # # #',
+    '# . . . . . . . . . . . . # # . . . . . . . . . . . . #',
+    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
+    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
+    '# o . . # # . . . . . . . P   . . . . . . . # # . . o #',
+    '# # # . # # . # # . # # # # # # # # . # # . # # . # # #',
+    '# # # . # # . # # . # # # # # # # # . # # . # # . # # #',
+    '# . . . . . . # # . . . . # # . . . . # # . . . . . . #',
+    '# . # # # # # # # # # # . # # . # # # # # # # # # # . #',
+    '# . # # # # # # # # # # . # # . # # # # # # # # # # . #',
+    '# . . . . . . . . . . . . . . . . . . . . . . . . . . #',
+    '# # # # # # # # # # # # # # # # # # # # # # # # # # # #'
+        ];
 
 
 // To store the scene graph, and elements usefull to rendering the scene
@@ -110,32 +138,28 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // Create a ground plane
     // ************************** //
-    const planeGeometry = new THREE.PlaneGeometry(40, 40);
-    const planeMaterial = new THREE.MeshPhongMaterial({ color: 0x362f31, side: THREE.DoubleSide });
-    const planeObject = new THREE.Mesh(planeGeometry, planeMaterial);
-    sceneGraph.add(planeObject);
-
-    // Change orientation of the plane using rotation
-    planeObject.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+    const ground = models.createGround(100, 100);
+    
+    // Change orientation of the ground using rotation
+    ground.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
     // Set shadow property
-    planeObject.receiveShadow = true;
-
+    ground.receiveShadow = true;
+    
+    sceneGraph.add(ground);
     // ************************** //
     // Wall
     // ************************** //
-    const wallGeometry = new THREE.BoxGeometry( 5, 6, 5 );
-    const wallMaterial = new THREE.MeshToonMaterial( {color: 0x1d1957} );
-    const wall = new THREE.Mesh( wallGeometry, wallMaterial );
+    const wall = models.createWall(1);
     wall.position.set(15, 3, 5);
     wall.receiveShadow = true;
     wall.name = "wall#1";
-    const wall2 = new THREE.Mesh( wallGeometry, wallMaterial );
+    const wall2 = models.createWall(2);
     wall2.position.set(15, 3, 10);
-    const wall3 = new THREE.Mesh( wallGeometry, wallMaterial );
+    const wall3 = models.createWall(3);
     wall3.position.set(5, 3, 5);
-    const wall4 = new THREE.Mesh( wallGeometry, wallMaterial );
+    const wall4 = models.createWall(4);
     wall4.position.set(5, 3, 10);
-    const wall5 = new THREE.Mesh( wallGeometry, wallMaterial );
+    const wall5 = models.createWall(5);
     wall5.position.set(200, 3, 2);
     const walls = new THREE.Group();
     walls.name = "walls";
@@ -155,13 +179,10 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // Point
     // ************************** //
-    const pointGeometry = new THREE.SphereGeometry( 0.25, 16, 8 );
-    const pointMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(0,0,135)', emissive: 'rgb(0,200,255)', specular: 'rgb(255,255,255)', shininess: 120 });
-    const point = new THREE.Mesh( pointGeometry, pointMaterial );
-    point.name = "point_1";
-    point.castShadow = true;
+    
+    const point = models.createPoint(1);
+    sceneGraph.add(point);
     point.position.set(-10, 1.5, 3);
-    sceneGraph.add( point );
 
     // Hitbox
     const pointHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
@@ -172,17 +193,9 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // PowerUp
     // ************************** //
-    const powerUpGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
-    const powerUpMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(255,200,0)', emissive: 'rgb(255,240,75)', specular: 'rgb(255,255,255)', shininess: 20 });
-    const powerUp = new THREE.Mesh( powerUpGeometry, powerUpMaterial );
-    powerUp.name = "powerup_1";
+    const powerUp = new models.createPowerUp(1);
     powerUp.position.set(10, 1.5, 3);
-    powerUp.castShadow = true;
-    sceneGraph.add( powerUp );
-    
-    const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
-    //light.position.set( 50, 50, 50 );
-    powerUp.add( light );
+    sceneGraph.add(powerUp);
     
     // Hitbox
     const powerUpHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
@@ -194,176 +207,16 @@ function load3DObjects(sceneGraph) {
     // ************************** //
     // Ghost
     // ************************** //
-    {
-    const ghost = new THREE.Group();
-    ghost.name = "ghost_1";
+    const ghost = models.createGhost(1, 0xFF0000, 0xAA0000);
     sceneGraph.add(ghost);
-    
-    ghost.position.set(0, 0, 0);
-    //ghost.rotateY(Math.PI);
-
-    const ghostMaterial = new THREE.MeshPhongMaterial({ color: 0xFF0000 });
-    // Head
-    const ghostHeadGeometry = new THREE.SphereGeometry( 0.8, 32, 16, 0, 2*Math.PI, 0, Math.PI/2 );
-    const ghostHead = new THREE.Mesh( ghostHeadGeometry, ghostMaterial );
-    ghostHead.name = ghost.name + "_head";
-    ghost.add(ghostHead);
-    // Body
-    const ghostBodygeometry = new THREE.CylinderGeometry( 0.8, 0.8, 1, 32 );
-    const ghostBody = new THREE.Mesh( ghostBodygeometry, ghostMaterial );
-    ghostBody.castShadow = true;
-    ghostBody.position.set(0, -0.5, 0);
-    ghostBody.name = ghost.name + "_body";
-    ghost.add(ghostBody);
-    // Skirt
-    const ghostSkirt = new THREE.Group();
-    ghostSkirt.position.set(0, -1.1, 0);
-
-    const ghostSkirtGeometry = new THREE.CylinderGeometry( 0.2, 0.1, 0.3, 3 );
-    var ghostSkirtElement;
-    const radius = 0.6;
-    const nPoints = 10;
-    // https://math.stackexchange.com/questions/227481/x-points-around-a-circle
-    for(var i = 0; i < nPoints; i++){
-        ghostSkirtElement = new THREE.Mesh( ghostSkirtGeometry, ghostMaterial );
-        ghostSkirt.add(ghostSkirtElement);
-        ghostSkirtElement.position.x = radius * Math.cos((i * 2 * Math.PI) / nPoints);
-        ghostSkirtElement.position.z = radius * Math.sin((i * 2 * Math.PI) / nPoints);
-    }
-    ghostSkirt.name = ghost.name + "_skirt";
-    ghost.add(ghostSkirt);
-
-
-    // Tail
-    const ghostTail = new THREE.Group();
-    ghostTail.name = ghost.name + "_tail";
-    ghostTail.SCALE_DOWN_SPEED = -0.05;
-    ghostTail.MIN_HEIGHT = -1;
-    ghostTail.MIN_SPEED = 0.1;
-    ghostTail.MAX_SPEED = 1;
-    ghostTail.position.set(0, -1, 0);
-
-    ghost.add(ghostTail);
-    const ghostTailSphere = new THREE.SphereGeometry(0.2, 8, 4);
-    const ghostTailSphereMaterial = new THREE.MeshToonMaterial({ color: 0xAA0000 });
-    var ghostTailBubble, rPos;
-    for(var i = 0; i < 15; i++){
-        ghostTailBubble = new THREE.Mesh(ghostTailSphere, ghostTailSphereMaterial);
-        ghostTail.add(ghostTailBubble);
-        rPos = getRandomPosition(0.6, 0.4);
-        ghostTailBubble.position.set(rPos.x, rPos.y, rPos.z);
-    }
-
-    // Normal Eyes
-    const ghostEyesGeometry = new THREE.SphereGeometry( 0.2, 16, 16, 0, 2*Math.PI, 0, Math.PI-Math.PI/6);
-    const ghostEyesMaterial = new THREE.MeshBasicMaterial( { color: 0xFFFFFF } );
-    const ghostEyeRetinaGeometry = new THREE.SphereGeometry( 0.2, 16, 16, 0, 2*Math.PI, 0, Math.PI/6);
-    const ghostEyeRetinaMaterial = new THREE.MeshPhongMaterial( { color: 0x000000 } );
-
-    const ghostLeftEye = new THREE.Group();
-    ghostLeftEye.name = ghost.name + "_lefteye";
-
-    const ghostLeftEyeBall = new THREE.Mesh( ghostEyesGeometry, ghostEyesMaterial );
-    ghostLeftEyeBall.rotateX(Math.PI);
-    const ghostLeftRetina = new THREE.Mesh( ghostEyeRetinaGeometry, ghostEyeRetinaMaterial );
-    ghostLeftEye.add(ghostLeftRetina);
-    ghostLeftEye.add(ghostLeftEyeBall);
-    ghost.add(ghostLeftEye);
-    ghostLeftEye.position.set(0.4, 0.1, 0.6);
-    ghostLeftEye.rotateX(Math.PI/2);
-
-    const ghostRightEye = new THREE.Group();
-    ghostRightEye.name = ghost.name + "_righteye";
-    const ghostRightEyeBall = new THREE.Mesh( ghostEyesGeometry, ghostEyesMaterial );
-    ghostRightEyeBall.rotateX(Math.PI);
-    const ghostRightRetina = new THREE.Mesh( ghostEyeRetinaGeometry, ghostEyeRetinaMaterial );
-    ghostRightEye.add(ghostRightRetina);
-    ghostRightEye.add(ghostRightEyeBall);
-    ghostRightEye.position.set(-0.4, 0.1, 0.6);
-    ghostRightEye.rotateX(Math.PI/2);
-    ghost.add(ghostRightEye);
-
-
-
-    // Scared
-    const ghostScaredEyesGeometry = new THREE.SphereGeometry( 0.2, 16, 16);
-    const ghostScaredEyesMaterial = new THREE.MeshBasicMaterial( { color: 0xF5F0CB, side: THREE.DoubleSide } );
-    const ghostRightEyeScared = new THREE.Mesh( ghostScaredEyesGeometry, ghostScaredEyesMaterial );
-    ghostRightEyeScared.position.set(-0.4, 0.1, 0.6);
-    const ghostLeftEyeScared = new THREE.Mesh( ghostScaredEyesGeometry, ghostScaredEyesMaterial );
-    ghostLeftEyeScared.position.set(0.4, 0.1, 0.6);
-    
-    
-
-    const ghostScaredMaterial = new THREE.MeshPhongMaterial({ color: 0x2129FF, emissive: 0x2129FF, specular: 0x2129FF, shininess: 20 });
-    
-    // Scared Mouth
-
-    const mouthShape = new THREE.Shape();
-    mouthShape.moveTo(-0.6, -0.5);
-    mouthShape.quadraticCurveTo(-0.4, -0.2 , -0.2, -0.5);
-    mouthShape.quadraticCurveTo(0.0, -0.2 , 0.2, -0.5);
-    mouthShape.quadraticCurveTo(0.4, -0.2 , 0.6, -0.5);
-    mouthShape.lineTo(0.6, -0.6);
-    mouthShape.quadraticCurveTo(0.4, -0.3 , 0.2, -0.6);
-    mouthShape.quadraticCurveTo(0.0, -0.3 , -0.2, -0.6);
-    mouthShape.quadraticCurveTo(-0.4, -0.3 , -0.6, -0.6);
-
-    const ghostMouthGeometry = new THREE.ShapeGeometry( mouthShape );
-    const ghostMouth = new THREE.Mesh( ghostMouthGeometry, ghostScaredEyesMaterial ) ;
-    ghostMouth.position.set(0, 0, 0.81);
-
-    const ghostScaredFace = new THREE.Group();
-    ghostScaredFace.name = ghost.name + "_scaredface";
-
-    ghostScaredFace.add(ghostRightEyeScared);
-    ghostScaredFace.add(ghostLeftEyeScared);
-    ghostScaredFace.add(ghostMouth);
-    ghost.add(ghostScaredFace);
-
-    // Scared properties 
-    ghostBody.material = ghostScaredMaterial;
-    ghostHead.material = ghostScaredMaterial;
-    ghostTail.traverse((child) => {
-        child.material = ghostScaredMaterial;
-    })
-    ghostSkirt.traverse((child) => {
-        child.material = ghostScaredMaterial;
-    })
-    ghostRightEye.visible = false;
-    ghostLeftEye.visible = false;
-    ghostScaredFace.visible = true;
-    
-
-    // Not scared properties
-    ghostBody.material = ghostMaterial;
-    ghostHead.material = ghostMaterial;
-    ghostTail.traverse((child) => {
-        child.material = ghostTailSphereMaterial;
-    })
-    ghostSkirt.traverse((child) => {
-        child.material = ghostMaterial;
-    })
-    ghostRightEye.visible = true;
-    ghostLeftEye.visible = true;
-    ghostScaredFace.visible = false;
+    ghost.position.set(-2, 2, 0);
+    ghost.rotateY(Math.PI);
 
     // Hitbox
     const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     ghostHitbox.name = ghost.name + "_hitbox";
     ghostHitbox.setFromObject(ghost);
     ghostHitboxes.push(ghostHitbox);
-
-
-    const ghostHitboxHelper = new THREE.BoxHelper( ghost, 0x00ff00 );
-    ghostHitboxHelper.name = ghost.name + "_hitboxHelper";
-    ghost.add(ghostHitboxHelper);
-    
-    // Properties
-    ghost.BOB_SPEED = 0.25;
-    ghost.BOB_MAX_HEIGHT = 2.4;
-    ghost.BOB_MIN_HEIGHT = 1.8;
-    }
 }
 
 function getRandomPosition(radius, y){
@@ -482,18 +335,17 @@ function computeFrame(time) {
 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     
-
     if (keyD ) {
-        pacman.translateX(dispX * delta);
+        pacman.translateX(pacman.MOV_SPEED_X * delta);
     }
     if (keyW ) {
-        pacman.translateZ(-dispZ * delta);
+        pacman.translateZ(-pacman.MOV_SPEED_Z * delta);
     }
     if (keyA ) {
-        pacman.translateX(-dispX * delta);
+        pacman.translateX(-pacman.MOV_SPEED_X * delta);
     }
     if (keyS ) {
-        pacman.translateZ(dispZ * delta);
+        pacman.translateZ(pacman.MOV_SPEED_Z * delta);
     }
     // ************************** //
     // Camera
@@ -555,7 +407,7 @@ function computeFrame(time) {
         ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
         ghostHitboxHelper.position.copy(ghost.position);
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
-            console.log("yes on ghost");
+            console.log("yes on ghost ");
             // remover hitbox
             //ghostHitboxes.pop(ghostHitbox);
         }

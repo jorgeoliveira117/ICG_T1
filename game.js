@@ -407,7 +407,8 @@ function computeFrame(time) {
         pacman.translateZ(pacman.MOV_SPEED_Z * delta);
     }
     sceneElements.camera.lookAt(pacman.position);
-
+    if(keyA || keyW || keyD || keyS)
+        checkBounds(delta);
     // ************************** //
     // Camera
     // ************************** //
@@ -488,37 +489,63 @@ function checkCollisions(){
     });
 }
 
+// Check if a side 
 function checkWalls(){
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
 
-    console.log(pacman)
+    // reset collisions
+    wallCollision.front = false;
+    wallCollision.back = false;
+    wallCollision.right = false;
+    wallCollision.left = false;
+
+    // get point in front
     const front = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    front.z += pacman.WALL_COLLISION_RADIUS_FRONT;
+    front.z += pacman.WALL_COLLISION_RADIUS;
+    // get point in back
+    const back = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    back.z -= pacman.WALL_COLLISION_RADIUS;
+    // get point in left
+    const left = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    left.x += pacman.WALL_COLLISION_RADIUS;
+    // get point in right
+    const right = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    right.x -= pacman.WALL_COLLISION_RADIUS;
+    
+    // check front
     if(getBlock(front.x, front.z) === "#")
         wallCollision.front = true;
-    else
-        wallCollision.front = false;
-
-    const back = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    back.z -= pacman.WALL_COLLISION_RADIUS_FRONT;
+    // check back
     if(getBlock(back.x, back.z) === "#")
         wallCollision.back = true;
-    else
-        wallCollision.back = false;
-
-    const left = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    left.x += pacman.WALL_COLLISION_RADIUS_SIDE;
+    // check left
     if(getBlock(left.x, left.z) === "#")
         wallCollision.left = true;
-    else
-        wallCollision.left = false;
-
-    const right = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    right.x -= pacman.WALL_COLLISION_RADIUS_SIDE;
+    // check right
     if(getBlock(right.x, right.z) === "#")
         wallCollision.right = true;
-    else
-        wallCollision.right = false;
+    //sphere.position.x -= pacman.WALL_COLLISION_RADIUS_FRONT;
+
+    
+}
+
+function checkBounds(delta){
+    // checks if pacman is inside a wall and smoothly moves out
+
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    // check front
+    if(getBlock(pacman.position.x, pacman.position.z + pacman.WALL_COLLISION_RADIUS) === "#")
+        pacman.position.z -= pacman.MOV_SPEED_Z * delta * 1;
+    // check back
+    if(getBlock(pacman.position.x, pacman.position.z - pacman.WALL_COLLISION_RADIUS) === "#")
+        pacman.position.z += pacman.MOV_SPEED_Z * delta * 1;
+    // check left
+    if(getBlock(pacman.position.x + pacman.WALL_COLLISION_RADIUS, pacman.position.z ) === "#")
+        pacman.position.x -= pacman.MOV_SPEED_X * delta * 1;
+    // check right
+    if(getBlock(pacman.position.x - pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#")
+        pacman.position.x += pacman.MOV_SPEED_X * delta * 1;
+
 }
 
 function getBlock(x, z){

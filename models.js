@@ -122,10 +122,11 @@ const models = {
         // Other values
         pacmanGroup.CAMERA_DEFAULT_POS = new THREE.Vector3(0, 5, 10);
         pacmanGroup.DISTANCE = pacmanGroup.position.distanceTo(pacmanGroup.CAMERA_DEFAULT_POS);
-        pacmanGroup.MOV_SPEED_X = 20;
-        pacmanGroup.MOV_SPEED_Z = 20;
+        pacmanGroup.MOV_SPEED_X = 10;
+        pacmanGroup.MOV_SPEED_Z = 10;
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
-        pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1.2;
+        pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
+        pacmanGroup.WALL_COLLISION_RADIUS = 1;
 
         camera.position.set(0, 5, 10);
         camera.lookAt(pacmanGroup.position);

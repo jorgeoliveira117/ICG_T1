@@ -392,8 +392,7 @@ function computeFrame(time) {
     
 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    if(keyA || keyW || keyD || keyS)
-        checkWalls();
+    checkWalls(delta);
     if (keyD && !wallCollision.right) {
         pacman.translateX(pacman.MOV_SPEED_X * delta);
     }
@@ -407,14 +406,14 @@ function computeFrame(time) {
         pacman.translateZ(pacman.MOV_SPEED_Z * delta);
     }
     sceneElements.camera.lookAt(pacman.position);
-    if(keyA || keyW || keyD || keyS)
-        checkBounds(delta);
+    checkBounds(delta);
     
     // ************************** //
     // Camera
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
+    /*
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
     raycaster.set(pacman.position, dir);
@@ -430,7 +429,6 @@ function computeFrame(time) {
     }else{
         sceneElements.camera.position.copy(cameraDefaultPos);
     }
-    /*
     
     */
     checkCollisions();
@@ -499,34 +497,28 @@ function checkWalls(){
     wallCollision.back = false;
     wallCollision.right = false;
     wallCollision.left = false;
-
-    // get point in front
-    const front = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    front.z += pacman.WALL_COLLISION_RADIUS;
-    // get point in back
-    const back = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    back.z -= pacman.WALL_COLLISION_RADIUS;
-    // get point in left
-    const left = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    left.x += pacman.WALL_COLLISION_RADIUS;
-    // get point in right
-    const right = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
-    right.x -= pacman.WALL_COLLISION_RADIUS;
     
     // check front
-    if(getBlock(front.x, front.z) === "#")
+    if(getBlock(pacman.position.x, pacman.position.z + pacman.WALL_COLLISION_RADIUS) === "#"){
         wallCollision.front = true;
+        pacman.position.z -= pacman.MOV_SPEED_Z * delta * 1.2;
+    }
     // check back
-    if(getBlock(back.x, back.z) === "#")
+    if(getBlock(pacman.position.x, pacman.position.z - pacman.WALL_COLLISION_RADIUS) === "#"){
         wallCollision.back = true;
+        pacman.position.z += pacman.MOV_SPEED_Z * delta * 1.2;
+    }
     // check left
-    if(getBlock(left.x, left.z) === "#")
+    if(getBlock(pacman.position.x + pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#"){
         wallCollision.left = true;
+        pacman.position.x -= pacman.MOV_SPEED_X * delta * 1.2;
+    }
     // check right
-    if(getBlock(right.x, right.z) === "#")
+    if(getBlock(pacman.position.x - pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#"){
         wallCollision.right = true;
+        pacman.position.x += pacman.MOV_SPEED_X * delta * 1.2;
+    }
     //sphere.position.x -= pacman.WALL_COLLISION_RADIUS_FRONT;
-
     
 }
 
@@ -536,16 +528,16 @@ function checkBounds(delta){
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     // check front
     if(getBlock(pacman.position.x, pacman.position.z + pacman.WALL_COLLISION_RADIUS) === "#")
-        pacman.position.z -= pacman.MOV_SPEED_Z * delta * 1;
+        pacman.position.z -= pacman.MOV_SPEED_Z * delta * 1.2;
     // check back
     if(getBlock(pacman.position.x, pacman.position.z - pacman.WALL_COLLISION_RADIUS) === "#")
-        pacman.position.z += pacman.MOV_SPEED_Z * delta * 1;
+        pacman.position.z += pacman.MOV_SPEED_Z * delta * 1.2;
     // check left
-    if(getBlock(pacman.position.x + pacman.WALL_COLLISION_RADIUS, pacman.position.z ) === "#")
-        pacman.position.x -= pacman.MOV_SPEED_X * delta * 1;
+    if(getBlock(pacman.position.x + pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#")
+        pacman.position.x -= pacman.MOV_SPEED_X * delta * 1.2;
     // check right
     if(getBlock(pacman.position.x - pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#")
-        pacman.position.x += pacman.MOV_SPEED_X * delta * 1;
+        pacman.position.x += pacman.MOV_SPEED_X * delta * 1.2;
 
 }
 

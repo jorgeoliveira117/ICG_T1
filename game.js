@@ -1,42 +1,5 @@
 "use strict";
 
-// Taken from
-// https://github.com/butchler/Pacman-3D/blob/gh-pages/game.js
-var LEVEL = [
-    '# # # # # # # # # # # # # # # # # # # # # # # # # # # #',
-    '# . . . . . . . . . . . . # # . . . . . . . . . . . . #',
-    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
-    '# o # # # # . # # # # # . # # . # # # # # . # # # # o #',
-    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
-    '# . . . . . . . . . . . . . . . . . . . . . . . . . . #',
-    '# . # # # # . # # . # # # # # # # # . # # . # # # # . #',
-    '# . # # # # . # # . # # # # # # # # . # # . # # # # . #',
-    '# . . . . . . # # . . . . # # . . . . # # . . . . . . #',
-    '# # # # # # . # # # # #   # #   # # # # # . # # # # # #',
-    '          # . # # # # #   # #   # # # # # . #          ',
-    '          # . # #         G           # # . #          ',
-    '          # . # #   # # # # # # # #   # # . #          ',
-    '# # # # # # . # #   #             #   # # . # # # # # #',
-    '            .       #             #       .            ',
-    '# # # # # # . # #   #             #   # # . # # # # # #',
-    '          # . # #   # # # # # # # #   # # . #          ',
-    '          # . # #                     # # . #          ',
-    '          # . # #   # # # # # # # #   # # . #          ',
-    '# # # # # # . # #   # # # # # # # #   # # . # # # # # #',
-    '# . . . . . . . . . . . . # # . . . . . . . . . . . . #',
-    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
-    '# . # # # # . # # # # # . # # . # # # # # . # # # # . #',
-    '# o . . # # . . . . . . . P   . . . . . . . # # . . o #',
-    '# # # . # # . # # . # # # # # # # # . # # . # # . # # #',
-    '# # # . # # . # # . # # # # # # # # . # # . # # . # # #',
-    '# . . . . . . # # . . . . # # . . . . # # . . . . . . #',
-    '# . # # # # # # # # # # . # # . # # # # # # # # # # . #',
-    '# . # # # # # # # # # # . # # . # # # # # # # # # # . #',
-    '# . . . . . . . . . . . . . . . . . . . . . . . . . . #',
-    '# # # # # # # # # # # # # # # # # # # # # # # # # # # #'
-        ];
-
-
 // To store the scene graph, and elements usefull to rendering the scene
 const sceneElements = {
     sceneGraph: null,
@@ -45,7 +8,9 @@ const sceneElements = {
     renderer: null,
 };
 
+// Hitboxes in the game
 const wallMeshes = []; 
+const portals = [];
 const ghostHitboxes = [];
 const pointHitboxes = [];
 const powerUpHitboxes = [];
@@ -53,13 +18,28 @@ const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
 pacmanHitbox.name = "pacman_hitbox";
 //pacmanHitbox.setFromObject(ghost);
 
+// Game control properties
+var gameIsReady = false;
+
+// Map properties
+const BLOCK_SIZE = 5;
+// Length of the level for X and Z in terms of "blocks"
+// Each block is 5x5 in area
+var levelWidth = 0;
+var levelHeight = 0;
+// Length in terms of coordinates
+var levelWidthCoord = 0;
+var levelHeightCoord = 0;
+const pacmanSpawnPoint = new THREE.Vector3();
+const ghostSpawnPoint = new THREE.Vector3();
+const level = [];
 
 // Functions are called
-//  1. Initialize the empty scene
-//  2. Add elements within the scene
-//  3. Animate
-helper.initEmptyScene(sceneElements);
-load3DObjects(sceneElements.sceneGraph);
+//  1. Initialize the level
+//  2. Animate
+
+loadLevel("level_1");
+//load3DObjects(sceneElements.sceneGraph);
 requestAnimationFrame(computeFrame);
 
 // HANDLING EVENTS
@@ -87,7 +67,6 @@ function resizeWindow(eventParam) {
 
     sceneElements.renderer.setSize(width, height);
 }
-
 function onDocumentKeyDown(event) {
     switch (event.keyCode) {
         case 68: //d
@@ -120,7 +99,6 @@ function onDocumentKeyUp(event) {
             break;
     }
 }
-
 function onMouseDown(){
     mouseDown = true;
     mouseUp = false;
@@ -132,27 +110,172 @@ function onMouseUp(){
 //////////////////////////////////////////////////////////////////
 
 
-// Create and insert in the scene graph the models of the 3D scene
-function load3DObjects(sceneGraph) {
+function loadLevel(levelName){
+    helper.initEmptyScene(sceneElements);
 
+    gameIsReady = false;
+
+    // Calculate how many blocks the map has
+
+    const levelMap = levels.getLevel(levelName)
+
+    // Read Map and format it
+    var i = 0;
+    var k = 0;
+    var line = "";
+
+    for(i = 0; i < levelMap.length; i++){
+        line = "";
+        for(k = 0; k < levelMap[0].length; k+=2){
+            line += levelMap[i][k];
+        }
+        console.log(line);
+        level.push(line);
+        console.log(level);
+    }
+
+    levelWidth = level[0].length;
+    levelHeight = level.length;
+    console.log(levelWidth);
+    const levelWidthCoord = levelWidth * BLOCK_SIZE;
+    const levelHeightCoord = levelHeight * BLOCK_SIZE;
     // ************************** //
-    // Create a ground plane
+    // Create ground
     // ************************** //
-    const ground = models.createGround(100, 100);
+    const ground = models.createGround(levelWidthCoord, levelHeightCoord);
     
     // Change orientation of the ground using rotation
     ground.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
     // Set shadow property
     ground.receiveShadow = true;
+    ground.position.set(levelWidthCoord / 2, 0, levelHeightCoord / 2);
+    sceneElements.sceneGraph.add(ground);
+
+    // ************************** //
+    // Illumination
+    // ************************** //
+
+    // Ambient light
+    const ambientLight = new THREE.AmbientLight('rgb(255, 255, 255)', 0.2);
+    sceneElements.sceneGraph.add(ambientLight);
+
+    // PointLight (with shadows)
+    const lightCenter = new THREE.PointLight('rgb(255, 255, 255)', 0.4, 1000);
+    lightCenter.position.set(levelWidthCoord / 2, 100, levelHeightCoord / 2);
+    sceneElements.sceneGraph.add(lightCenter);
+    lightCenter.name = "light_center";
+
+    // Setup shadow properties for the PointLight
+    lightCenter.castShadow = true;
+    lightCenter.shadow.mapSize.width = 2048;
+    lightCenter.shadow.mapSize.height = 2048;
+    /*
+    const lightSphereGeometry = new THREE.SphereGeometry( 2, 16, 8 );
+    const lightSphereMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+    const lightCenterMesh = new THREE.Mesh( lightSphereGeometry, lightSphereMaterial );
+    lightCenter.add(lightCenterMesh);
+    */ 
+
+    // Other lights
+    const lightBR = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
+    lightBR.position.set(0, 100, 0);
+    sceneElements.sceneGraph.add(lightBR);
+    lightBR.name = "light_bottomright";
+
+    const lightBL = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
+    lightBL.position.set(levelWidthCoord, 100, 0);
+    sceneElements.sceneGraph.add(lightBL);
+    lightBL.name = "light_bottomleft";
+
+    const lightTR = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
+    lightTR.position.set(0, 100, levelHeightCoord);
+    sceneElements.sceneGraph.add(lightTR);
+    lightTR.name = "light_topright";
+
+    const lightTL = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
+    lightTL.position.set(levelWidthCoord, 100, levelHeightCoord);
+    sceneElements.sceneGraph.add(lightTL);
+    lightTL.name = "light_topleft";
+
+
+    // ************************** //
+    // Read Map and generate it
+    // ************************** //
+
+    var char = 0;
+    var wallN = 0;
+    var pointN = 0;
+    var powerUpN = 0;
+    var ghostN = 0;
+    console.log(level[2])
+    for(line = 0; line < level.length; line++){
+        for(char = 0; char < level[0].length; char++){
+            switch(level[line][char]){
+                case " ":
+                    // Space
+                    break;
+                case "#":
+                    const wall = models.createWall(wallN, BLOCK_SIZE);
+                    wallN++;
+                    wall.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 3, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
+                    console.log(wall.position);
+                    wallMeshes.push(wall);
+                    sceneElements.sceneGraph.add(wall);
+                    break;
+                case ".":
+                    // Point
+                    break;
+                case "o":
+                    // Power Up
+                    break;
+                case "P":
+                    // Pacman Spawn
+                    break;
+                case "G":
+                    // Ghost Spawn
+                    break;
+                case "F":
+                    // Fruit
+                    // Not implemented
+                    break;
+                default:
+                    // Portal
+                    break;
+            }
+        }
+    }
+
+    // ************************** //
+    // Create Pacman
+    // ************************** //
+    const pacman = models.createPacman(sceneElements.camera);
+
+    // Hitbox
+    const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    pacmanHitbox.name = "pacman_hitbox";
+    pacmanHitbox.setFromObject(pacman);
+
+    pacman.translateY(1.5);
+    pacman.position.set(levelWidthCoord / 2, 100, levelHeightCoord / 2);
+    pacman.rotation.x = -Math.PI/2;
+    sceneElements.sceneGraph.add(pacman);
+
+    gameIsReady = true;
+
+    // ************************** //
+    // Create Ghosts
+    // ************************** //
+
+}
+
+// Create and insert in the scene graph the models of the 3D scene
+function load3DObjects(sceneGraph) {
+
     
-    sceneGraph.add(ground);
     // ************************** //
     // Wall
     // ************************** //
-    const wall = models.createWall(1);
-    wall.position.set(15, 3, 5);
-    wall.receiveShadow = true;
-    wall.name = "wall#1";
+    
     const wall2 = models.createWall(2);
     wall2.position.set(15, 3, 10);
     const wall3 = models.createWall(3);
@@ -175,6 +298,21 @@ function load3DObjects(sceneGraph) {
     walls.add( wall5 );
     wallMeshes.push(wall5);
     sceneGraph.add(walls);
+
+    // ************************** //
+    // Create Pacman
+    // ************************** //
+    const pacman = models.createPacman(sceneElements.camera);
+
+    // Hitbox
+    const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    pacmanHitbox.name = "pacman_hitbox";
+    pacmanHitbox.setFromObject(pacman);
+
+    pacman.translateY(1.5);
+    pacman.translateZ(5);
+    
+    sceneElements.sceneGraph.add(pacman);
 
     // ************************** //
     // Point
@@ -283,16 +421,11 @@ function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
     /*
-    // THE SPOT LIGHT
-    // Can extract an object from the scene Graph from its name
-    const light = sceneElements.sceneGraph.getObjectByName("light");
-    // Apply a small displacement
-    if (light.position.x >= 10) {
-        delta *= -1;
-    } else if (light.position.x <= -10) {
-        delta *= -1;
-    }
-    light.translateX(delta);
+    
+    
+    ADD GAME IS READY CONDITION
+
+
     */
     
 
@@ -347,11 +480,14 @@ function computeFrame(time) {
     if (keyS ) {
         pacman.translateZ(pacman.MOV_SPEED_Z * delta);
     }
+    sceneElements.camera.lookAt(pacman.position);
+
     // ************************** //
     // Camera
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
+    /*
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
     raycaster.set(pacman.position, dir);
@@ -367,7 +503,7 @@ function computeFrame(time) {
     }else{
         sceneElements.camera.position.copy(cameraDefaultPos);
     }
-    sceneElements.camera.lookAt(pacman.position);
+    
 
     // ************************** //
     // Ghost
@@ -430,6 +566,7 @@ function computeFrame(time) {
         }
     }
 
+    */
 
     // Rendering
     helper.render(sceneElements);

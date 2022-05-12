@@ -9,59 +9,14 @@ const helper = {
         // ************************** //
         sceneElements.sceneGraph = new THREE.Scene();
 
-
         // ************************** //
         // Add camera
         // ************************** //
         const width = window.innerWidth;
         const height = window.innerHeight;
-        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 500);
+        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
         sceneElements.camera = camera;
         
-
-        // ************************** //
-        // Create Pacman
-        // ************************** //
-        const pacman = models.createPacman(camera);
-
-        // Hitbox
-        const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-        pacmanHitbox.name = "pacman_hitbox";
-        pacmanHitbox.setFromObject(pacman);
-
-        pacman.translateY(1.5);
-        pacman.translateZ(5);
-        
-        sceneElements.sceneGraph.add(pacman);
-
-
-
-        // ************************** //
-        // Illumination
-        // ************************** //
-
-        // ************************** //
-        // Add ambient light
-        // ************************** //
-        const ambientLight = new THREE.AmbientLight('rgb(255, 255, 255)', 0.2);
-        sceneElements.sceneGraph.add(ambientLight);
-
-        // ***************************** //
-        // Add spotlight (with shadows)
-        // ***************************** //
-        const spotLight = new THREE.SpotLight('rgb(255, 255, 255)', 0.8);
-        spotLight.position.set(0, 100, 0);
-        sceneElements.sceneGraph.add(spotLight);
-
-        // Setup shadow properties for the spotlight
-        spotLight.castShadow = true;
-        spotLight.shadow.mapSize.width = 2048;
-        spotLight.shadow.mapSize.height = 2048;
-
-        // Give a name to the spot light
-        spotLight.name = "light";
-
-
         // *********************************** //
         // Create renderer (with shadow map)
         // *********************************** //
@@ -83,7 +38,7 @@ const helper = {
         htmlElement.appendChild(renderer.domElement);
 
         // ************************** //
-        // NEW --- Control for the camera
+        // Control for the camera
         // ************************** //
         sceneElements.control = new THREE.OrbitControls(camera, renderer.domElement);
         //sceneElements.control.enabled = false;

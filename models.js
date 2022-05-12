@@ -18,7 +18,6 @@ const powerUpMaterial = new THREE.MeshPhongMaterial({
 const powerUpGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
 
 
-const wallGeometry = new THREE.BoxGeometry( 5, 6, 5 );
 const wallMaterial = new THREE.MeshToonMaterial( {color: 0x1d1957} );
 
 
@@ -123,8 +122,8 @@ const models = {
         // Other values
         pacmanGroup.CAMERA_DEFAULT_POS = new THREE.Vector3(0, 5, 10);
         pacmanGroup.DISTANCE = pacmanGroup.position.distanceTo(pacmanGroup.CAMERA_DEFAULT_POS);
-        pacmanGroup.MOV_SPEED_X = 10;
-        pacmanGroup.MOV_SPEED_Z = 10;
+        pacmanGroup.MOV_SPEED_X = 20;
+        pacmanGroup.MOV_SPEED_Z = 20;
 
         camera.position.set(0, 5, 10);
         camera.lookAt(pacmanGroup.position);
@@ -284,7 +283,8 @@ const models = {
     // ************************** //
     // Wall
     // ************************** //
-    createWall: function(n){
+    createWall: function(n, size){
+        const wallGeometry = new THREE.BoxGeometry( size, 6, size );
         const wall = new THREE.Mesh( wallGeometry, wallMaterial );
         wall.name = "wall_" + n;
         wall.receiveShadow = true;

@@ -318,15 +318,6 @@ function loadLevel(levelName){
 // Create and insert in the scene graph the models of the 3D scene
 function load3DObjects(sceneGraph) {
 
-    // ************************** //
-    // PowerUp
-    // ************************** //
-    
-
-
-    // ************************** //
-    // Ghost
-    // ************************** //
     
 }
 
@@ -401,7 +392,8 @@ function computeFrame(time) {
     
 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    checkWalls();
+    if(keyA || keyW || keyD || keyS)
+        checkWalls();
     if (keyD && !wallCollision.right) {
         pacman.translateX(pacman.MOV_SPEED_X * delta);
     }
@@ -497,11 +489,54 @@ function checkCollisions(){
 }
 
 function checkWalls(){
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
 
+    console.log(pacman)
+    const front = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    front.z += pacman.WALL_COLLISION_RADIUS_FRONT;
+    if(getBlock(front.x, front.z) === "#")
+        wallCollision.front = true;
+    else
+        wallCollision.front = false;
+
+    const back = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    back.z -= pacman.WALL_COLLISION_RADIUS_FRONT;
+    if(getBlock(back.x, back.z) === "#")
+        wallCollision.back = true;
+    else
+        wallCollision.back = false;
+
+    const left = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    left.x += pacman.WALL_COLLISION_RADIUS_SIDE;
+    if(getBlock(left.x, left.z) === "#")
+        wallCollision.left = true;
+    else
+        wallCollision.left = false;
+
+    const right = new THREE.Vector3(pacman.position.x, pacman.position.y, pacman.position.z);
+    right.x -= pacman.WALL_COLLISION_RADIUS_SIDE;
+    if(getBlock(right.x, right.z) === "#")
+        wallCollision.right = true;
+    else
+        wallCollision.right = false;
+}
+
+function getBlock(x, z){
+    // Inspired from
+    // https://github.com/butchler/Pacman-3D/blob/gh-pages/game.js
+
+    const coords = getCoords(x, z);
+
+    return(level[coords.z][coords.x]);
 }
 
 function getCoords(x, z){
+    const coords = {}
 
+    coords.x = levelWidth - Math.floor( x / BLOCK_SIZE) - 1;
+    coords.z = levelHeight - Math.floor( z / BLOCK_SIZE) - 1;
+
+    return coords;
 }
 
 function animateGhosts(){

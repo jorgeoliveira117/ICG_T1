@@ -124,7 +124,8 @@ const models = {
         pacmanGroup.DISTANCE = pacmanGroup.position.distanceTo(pacmanGroup.CAMERA_DEFAULT_POS);
         pacmanGroup.MOV_SPEED_X = 20;
         pacmanGroup.MOV_SPEED_Z = 20;
-        pacmanGroup.WALL_COLLISION_RADIUS = 2;
+        pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
+        pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1.2;
 
         camera.position.set(0, 5, 10);
         camera.lookAt(pacmanGroup.position);

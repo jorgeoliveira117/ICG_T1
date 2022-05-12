@@ -72,12 +72,22 @@ const helper = {
         pacmanGroup.rotateY(Math.PI);
         pacmanGroup.name = "pacman";
 
+        // Hitbox
+        const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        pacmanHitbox.name = "pacman_hitbox";
+        pacmanHitbox.setFromObject(pacman);
+        
+        const pacmanHitboxHelper = new THREE.BoxHelper( pacman, 0x00ff00 );
+        pacmanHitboxHelper.name = "pacman_hitboxHelper";
+        pacmanGroup.add(pacmanHitboxHelper);
+
         camera.position.set(0, 5, 10);
         //camera.translateY(10);
         //camera.translateZ(20);
         camera.lookAt(pacmanGroup.position);
         camera.rotation.x = 0;
         
+        pacmanGroup.translateZ(5);
         
         sceneElements.sceneGraph.add(pacmanGroup);
 

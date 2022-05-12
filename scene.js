@@ -17,6 +17,14 @@ const sceneElements = {
     renderer: null,
 };
 
+const wallMeshes = []; 
+const ghostHitboxes = [];
+const pointHitboxes = [];
+const powerUpHitboxes = [];
+const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+pacmanHitbox.name = "pacman_hitbox";
+//pacmanHitbox.setFromObject(ghost);
+
 
 // Functions are called
 //  1. Initialize the empty scene
@@ -118,22 +126,31 @@ function load3DObjects(sceneGraph) {
     const wallGeometry = new THREE.BoxGeometry( 5, 6, 5 );
     const wallMaterial = new THREE.MeshToonMaterial( {color: 0x1d1957} );
     const wall = new THREE.Mesh( wallGeometry, wallMaterial );
-    wall.position.set(5, 3, 5);
+    wall.position.set(15, 3, 5);
     wall.receiveShadow = true;
     wall.name = "wall#1";
-    sceneGraph.add( wall );
     const wall2 = new THREE.Mesh( wallGeometry, wallMaterial );
-    wall2.position.set(5, 3, 10);
+    wall2.position.set(15, 3, 10);
     const wall3 = new THREE.Mesh( wallGeometry, wallMaterial );
-    wall3.position.set(-5, 3, 5);
+    wall3.position.set(5, 3, 5);
     const wall4 = new THREE.Mesh( wallGeometry, wallMaterial );
-    wall4.position.set(-5, 3, 10);
+    wall4.position.set(5, 3, 10);
     const wall5 = new THREE.Mesh( wallGeometry, wallMaterial );
     wall5.position.set(200, 3, 2);
-    sceneGraph.add( wall2 );
-    sceneGraph.add( wall3 );
-    sceneGraph.add( wall4 );
-    sceneGraph.add( wall5 );
+    const walls = new THREE.Group();
+    walls.name = "walls";
+
+    walls.add( wall );
+    wallMeshes.push(wall);
+    walls.add( wall2 );
+    wallMeshes.push(wall2);
+    walls.add( wall3 );
+    wallMeshes.push(wall3);
+    walls.add( wall4 );
+    wallMeshes.push(wall4);
+    walls.add( wall5 );
+    wallMeshes.push(wall5);
+    sceneGraph.add(walls);
 
     // ************************** //
     // Point
@@ -141,33 +158,49 @@ function load3DObjects(sceneGraph) {
     const pointGeometry = new THREE.SphereGeometry( 0.25, 16, 8 );
     const pointMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(0,0,135)', emissive: 'rgb(0,200,255)', specular: 'rgb(255,255,255)', shininess: 120 });
     const point = new THREE.Mesh( pointGeometry, pointMaterial );
+    point.name = "point_1";
     point.castShadow = true;
     point.position.set(-10, 1.5, 3);
     sceneGraph.add( point );
+
+    // Hitbox
+    const pointHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    pointHitbox.name = point.name + "_hitbox";
+    pointHitbox.setFromObject(point);
+    pointHitboxes.push(pointHitbox);
+
     // ************************** //
     // PowerUp
     // ************************** //
     const powerUpGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
     const powerUpMaterial = new THREE.MeshPhongMaterial({ color: 'rgb(255,200,0)', emissive: 'rgb(255,240,75)', specular: 'rgb(255,255,255)', shininess: 20 });
     const powerUp = new THREE.Mesh( powerUpGeometry, powerUpMaterial );
+    powerUp.name = "powerup_1";
     powerUp.position.set(10, 1.5, 3);
     powerUp.castShadow = true;
+    sceneGraph.add( powerUp );
     
     const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
     //light.position.set( 50, 50, 50 );
     powerUp.add( light );
     
-    sceneGraph.add( powerUp );
+    // Hitbox
+    const powerUpHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    powerUpHitbox.name = powerUp.name + "_hitbox";
+    powerUpHitbox.setFromObject(powerUp);
+    powerUpHitboxes.push(powerUpHitbox);
+
 
     // ************************** //
     // Ghost
     // ************************** //
+    {
     const ghost = new THREE.Group();
     ghost.name = "ghost_1";
     sceneGraph.add(ghost);
     
-    ghost.position.set(0, 2, -3);
-    ghost.rotateY(Math.PI);
+    ghost.position.set(0, 0, 0);
+    //ghost.rotateY(Math.PI);
 
     const ghostMaterial = new THREE.MeshPhongMaterial({ color: 0xFF0000 });
     // Head
@@ -235,9 +268,9 @@ function load3DObjects(sceneGraph) {
     const ghostLeftRetina = new THREE.Mesh( ghostEyeRetinaGeometry, ghostEyeRetinaMaterial );
     ghostLeftEye.add(ghostLeftRetina);
     ghostLeftEye.add(ghostLeftEyeBall);
+    ghost.add(ghostLeftEye);
     ghostLeftEye.position.set(0.4, 0.1, 0.6);
     ghostLeftEye.rotateX(Math.PI/2);
-    ghost.add(ghostLeftEye);
 
     const ghostRightEye = new THREE.Group();
     ghostRightEye.name = ghost.name + "_righteye";
@@ -315,14 +348,22 @@ function load3DObjects(sceneGraph) {
     ghostLeftEye.visible = true;
     ghostScaredFace.visible = false;
 
+    // Hitbox
+    const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    ghostHitbox.name = ghost.name + "_hitbox";
+    ghostHitbox.setFromObject(ghost);
+    ghostHitboxes.push(ghostHitbox);
 
 
+    const ghostHitboxHelper = new THREE.BoxHelper( ghost, 0x00ff00 );
+    ghostHitboxHelper.name = ghost.name + "_hitboxHelper";
+    ghost.add(ghostHitboxHelper);
     
     // Properties
     ghost.BOB_SPEED = 0.25;
     ghost.BOB_MAX_HEIGHT = 2.4;
     ghost.BOB_MIN_HEIGHT = 1.8;
-
+    }
 }
 
 function getRandomPosition(radius, y){
@@ -375,6 +416,16 @@ var delta;
 var dispX = 10, dispZ = 10;
 var lastTime = 0;
 
+
+
+const raycaster = new THREE.Raycaster();
+const sceneMeshes = new Array();
+var cameraWorldPos = new THREE.Vector3();
+let dir = new THREE.Vector3();
+let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
+let distance = cameraWorldPos.distanceTo(cameraDefaultPos);
+let intersects = [];
+
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
@@ -390,7 +441,7 @@ function computeFrame(time) {
     }
     light.translateX(delta);
     */
-
+    
 
     // ************************** //
     // Pacman
@@ -444,7 +495,26 @@ function computeFrame(time) {
     if (keyS ) {
         pacman.translateZ(dispZ * delta);
     }
-
+    // ************************** //
+    // Camera
+    // ************************** //
+    // Adapted from
+    // https://sbcode.net/threejs/raycaster2/
+    sceneElements.camera.getWorldPosition(cameraWorldPos);
+    dir.subVectors(cameraWorldPos, pacman.position).normalize();
+    raycaster.set(pacman.position, dir);
+    intersects = raycaster.intersectObjects(wallMeshes, false);
+    if (intersects.length > 0) {
+        if (intersects[0].distance < distance) {
+            sceneElements.sceneGraph.attach(sceneElements.camera);
+            sceneElements.camera.position.copy(intersects[0].point);
+            pacman.attach(sceneElements.camera);
+        }else{
+            sceneElements.camera.position.copy(cameraDefaultPos);
+        }
+    }else{
+        sceneElements.camera.position.copy(cameraDefaultPos);
+    }
     sceneElements.camera.lookAt(pacman.position);
 
     // ************************** //
@@ -469,6 +539,45 @@ function computeFrame(time) {
         ghost.BOB_SPEED *= -1;
         ghost.position.y = ghost.BOB_MAX_HEIGHT;
     }
+
+
+    pacmanHitbox.setFromObject(pacmanModel);
+    pacmanModel.geometry.computeBoundingSphere();
+    pacmanModel.geometry.boundingSphere.getBoundingBox(pacmanHitbox)
+    pacmanHitbox.applyMatrix4(pacmanModel.matrixWorld);
+    
+    const ghostHitbox = ghostHitboxes.find((hitbox) => hitbox.name === "ghost_1_hitbox");
+    const ghostHitboxHelper = sceneElements.sceneGraph.getObjectByName("ghost_1_hitboxHelper");
+    const ghostBody = sceneElements.sceneGraph.getObjectByName("ghost_1_body");
+
+    
+    if(ghostHitbox){
+        ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
+        ghostHitboxHelper.position.copy(ghost.position);
+        if(pacmanHitbox.intersectsBox(ghostHitbox)){
+            console.log("yes on ghost");
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    }
+
+    const pointHitbox = pointHitboxes.find((hitbox) => hitbox.name === "point_1_hitbox");
+    if(pointHitbox){
+        if(pacmanHitbox.intersectsBox(pointHitbox)){
+            console.log("yes on point");
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    }
+    const powerUpHitbox = powerUpHitboxes.find((hitbox) => hitbox.name === "powerup_1_hitbox");
+    if(powerUpHitbox){
+        if(pacmanHitbox.intersectsBox(powerUpHitbox)){
+            console.log("yes on power up");
+            // remover hitbox
+            //ghostHitboxes.pop(ghostHitbox);
+        }
+    }
+
 
     // Rendering
     helper.render(sceneElements);

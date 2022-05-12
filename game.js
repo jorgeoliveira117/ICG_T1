@@ -361,7 +361,7 @@ function handleMouseMove(e) {
     var deltaX = e.clientX - mouseX;
     mouseX = e.clientX;
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -414,7 +414,7 @@ function computeFrame(time) {
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
-    /*
+    
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
     raycaster.set(pacman.position, dir);
@@ -430,7 +430,7 @@ function computeFrame(time) {
     }else{
         sceneElements.camera.position.copy(cameraDefaultPos);
     }
-    
+    /*
     */
     checkCollisions();
     animatePacman();

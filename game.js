@@ -377,8 +377,8 @@ const raycaster = new THREE.Raycaster();
 const sceneMeshes = new Array();
 var cameraWorldPos = new THREE.Vector3();
 let dir = new THREE.Vector3();
-let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
-let distance = cameraWorldPos.distanceTo(cameraDefaultPos);
+//let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
+//let distance = cameraWorldPos.distanceTo(pacman.CAMERA_DEFAULT_POS);
 let intersects = [];
 const wallCollision = {front: false, left: false, right: false, back: false}
 
@@ -413,23 +413,29 @@ function computeFrame(time) {
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
-    /*
+    
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
     raycaster.set(pacman.position, dir);
     intersects = raycaster.intersectObjects(wallMeshes, false);
     if (intersects.length > 0) {
-        if (intersects[0].distance < distance) {
+        if (intersects[0].distance < pacman.CAMERA_DISTANCE) {
             sceneElements.sceneGraph.attach(sceneElements.camera);
             sceneElements.camera.position.copy(intersects[0].point);
             pacman.attach(sceneElements.camera);
         }else{
-            sceneElements.camera.position.copy(cameraDefaultPos);
+            if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
+                sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
+            else
+                sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
         }
     }else{
-        sceneElements.camera.position.copy(cameraDefaultPos);
+        if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
+            sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
+        else
+            sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
     }
-    
+    /*
     */
     checkCollisions();
     animatePacman();

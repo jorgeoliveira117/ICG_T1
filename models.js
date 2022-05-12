@@ -133,6 +133,7 @@ const models = {
 
         const pacmanHitboxHelper = new THREE.BoxHelper( pacman, 0x00ff00 );
         pacmanHitboxHelper.name = "pacman_hitboxHelper";
+        pacmanHitboxHelper.visible = false;
         pacmanGroup.add(pacmanHitboxHelper);
 
         return pacmanGroup;
@@ -268,6 +269,7 @@ const models = {
     
         const ghostHitboxHelper = new THREE.BoxHelper( ghost, 0x00ff00 );
         ghostHitboxHelper.name = ghost.name + "_hitboxHelper";
+        ghostHitboxHelper.visible = false;
         ghost.add(ghostHitboxHelper);
         
         // Properties
@@ -284,7 +286,7 @@ const models = {
     // Wall
     // ************************** //
     createWall: function(n, size){
-        const wallGeometry = new THREE.BoxGeometry( size, 6, size );
+        const wallGeometry = new THREE.BoxGeometry( size, 4, size );
         const wall = new THREE.Mesh( wallGeometry, wallMaterial );
         wall.name = "wall_" + n;
         wall.receiveShadow = true;

@@ -20,6 +20,13 @@ pacmanHitbox.name = "pacman_hitbox";
 
 // Game control properties
 var gameIsReady = false;
+const ghosts = [];
+const GHOST_COLORS = [
+    [0xF80404,0xA30404],
+    [0xF8ACF4,0xA3ACF4],
+    [0x08F8F4,0x08F8A0],
+    [0xF8AC4C,0xA3AC4C]
+]
 
 // Map properties
 const BLOCK_SIZE = 5;
@@ -129,14 +136,11 @@ function loadLevel(levelName){
         for(k = 0; k < levelMap[0].length; k+=2){
             line += levelMap[i][k];
         }
-        console.log(line);
         level.push(line);
-        console.log(level);
     }
 
     levelWidth = level[0].length;
     levelHeight = level.length;
-    console.log(levelWidth);
     const levelWidthCoord = levelWidth * BLOCK_SIZE;
     const levelHeightCoord = levelHeight * BLOCK_SIZE;
     // ************************** //
@@ -199,7 +203,7 @@ function loadLevel(levelName){
 
 
     // ************************** //
-    // Read Map and generate it
+    // Generate Map
     // ************************** //
 
     var char = 0;
@@ -207,7 +211,6 @@ function loadLevel(levelName){
     var pointN = 0;
     var powerUpN = 0;
     var ghostN = 0;
-    console.log(level[2])
     for(line = 0; line < level.length; line++){
         for(char = 0; char < level[0].length; char++){
             switch(level[line][char]){
@@ -217,22 +220,41 @@ function loadLevel(levelName){
                 case "#":
                     const wall = models.createWall(wallN, BLOCK_SIZE);
                     wallN++;
-                    wall.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 3, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
-                    console.log(wall.position);
+                    wall.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 2, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     wallMeshes.push(wall);
                     sceneElements.sceneGraph.add(wall);
                     break;
                 case ".":
                     // Point
+                    const point = models.createPoint(pointN);
+                    pointN++;
+                    sceneElements.sceneGraph.add(point);
+                    point.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
+                    // Hitbox
+                    const pointHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+                    pointHitbox.name = point.name + "_hitbox";
+                    pointHitbox.setFromObject(point);
+                    pointHitboxes.push(pointHitbox);
                     break;
                 case "o":
                     // Power Up
+                    const powerUp = new models.createPowerUp(powerUpN);
+                    powerUpN++;
+                    powerUp.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
+                    sceneElements.sceneGraph.add(powerUp);
+                    // Hitbox
+                    const powerUpHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+                    powerUpHitbox.name = powerUp.name + "_hitbox";
+                    powerUpHitbox.setFromObject(powerUp);
+                    powerUpHitboxes.push(powerUpHitbox);
                     break;
                 case "P":
                     // Pacman Spawn
+                    pacmanSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2)
                     break;
                 case "G":
                     // Ghost Spawn
+                    ghostSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2)
                     break;
                 case "F":
                     // Fruit
@@ -240,11 +262,17 @@ function loadLevel(levelName){
                     break;
                 default:
                     // Portal
+                    const portal = {};
+                    portal.num = level[line][char];
+                    if(portals.find((p) => (p.num === level[line][char])))
+                        portal.type = "B";
+                    else
+                        portal.type = "A";
+                    portals.push(portal);
                     break;
             }
         }
     }
-
     // ************************** //
     // Create Pacman
     // ************************** //
@@ -256,105 +284,48 @@ function loadLevel(levelName){
     pacmanHitbox.setFromObject(pacman);
 
     pacman.translateY(1.5);
-    pacman.position.set(levelWidthCoord / 2, 100, levelHeightCoord / 2);
-    pacman.rotation.x = -Math.PI/2;
+    pacman.position.copy(pacmanSpawnPoint);
     sceneElements.sceneGraph.add(pacman);
-
-    gameIsReady = true;
+    
+    
+    pacman.rotation.x = -Math.PI/2;
+    
 
     // ************************** //
     // Create Ghosts
     // ************************** //
+    GHOST_COLORS.forEach(ghostColor => {
+        const ghost = models.createGhost(ghostN, ghostColor[0], ghostColor[1]);
+        ghostN++;
+        sceneElements.sceneGraph.add(ghost);
+        ghost.position.copy(pacmanSpawnPoint);
+        ghost.translateX(2*ghostN);
+        //ghost.position.copy(ghostSpawnPoint);
+        ghost.rotateY(Math.PI);
 
+        // Hitbox
+        const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        ghostHitbox.name = ghost.name + "_hitbox";
+        ghostHitbox.setFromObject(ghost);
+        ghostHitboxes.push(ghostHitbox);
+    });
+
+    gameIsReady = true;
 }
 
 // Create and insert in the scene graph the models of the 3D scene
 function load3DObjects(sceneGraph) {
 
-    
-    // ************************** //
-    // Wall
-    // ************************** //
-    
-    const wall2 = models.createWall(2);
-    wall2.position.set(15, 3, 10);
-    const wall3 = models.createWall(3);
-    wall3.position.set(5, 3, 5);
-    const wall4 = models.createWall(4);
-    wall4.position.set(5, 3, 10);
-    const wall5 = models.createWall(5);
-    wall5.position.set(200, 3, 2);
-    const walls = new THREE.Group();
-    walls.name = "walls";
-
-    walls.add( wall );
-    wallMeshes.push(wall);
-    walls.add( wall2 );
-    wallMeshes.push(wall2);
-    walls.add( wall3 );
-    wallMeshes.push(wall3);
-    walls.add( wall4 );
-    wallMeshes.push(wall4);
-    walls.add( wall5 );
-    wallMeshes.push(wall5);
-    sceneGraph.add(walls);
-
-    // ************************** //
-    // Create Pacman
-    // ************************** //
-    const pacman = models.createPacman(sceneElements.camera);
-
-    // Hitbox
-    const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    pacmanHitbox.name = "pacman_hitbox";
-    pacmanHitbox.setFromObject(pacman);
-
-    pacman.translateY(1.5);
-    pacman.translateZ(5);
-    
-    sceneElements.sceneGraph.add(pacman);
-
-    // ************************** //
-    // Point
-    // ************************** //
-    
-    const point = models.createPoint(1);
-    sceneGraph.add(point);
-    point.position.set(-10, 1.5, 3);
-
-    // Hitbox
-    const pointHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    pointHitbox.name = point.name + "_hitbox";
-    pointHitbox.setFromObject(point);
-    pointHitboxes.push(pointHitbox);
-
     // ************************** //
     // PowerUp
     // ************************** //
-    const powerUp = new models.createPowerUp(1);
-    powerUp.position.set(10, 1.5, 3);
-    sceneGraph.add(powerUp);
     
-    // Hitbox
-    const powerUpHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    powerUpHitbox.name = powerUp.name + "_hitbox";
-    powerUpHitbox.setFromObject(powerUp);
-    powerUpHitboxes.push(powerUpHitbox);
 
 
     // ************************** //
     // Ghost
     // ************************** //
-    const ghost = models.createGhost(1, 0xFF0000, 0xAA0000);
-    sceneGraph.add(ghost);
-    ghost.position.set(-2, 2, 0);
-    ghost.rotateY(Math.PI);
-
-    // Hitbox
-    const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    ghostHitbox.name = ghost.name + "_hitbox";
-    ghostHitbox.setFromObject(ghost);
-    ghostHitboxes.push(ghostHitbox);
+    
 }
 
 function getRandomPosition(radius, y){
@@ -504,7 +475,8 @@ function computeFrame(time) {
         sceneElements.camera.position.copy(cameraDefaultPos);
     }
     
-
+    */
+    checkCollisions();
     // ************************** //
     // Ghost
     // ************************** //
@@ -529,19 +501,32 @@ function computeFrame(time) {
     }
 
 
+    // Rendering
+    helper.render(sceneElements);
+
+    // NEW --- Update control of the camera
+    sceneElements.control.update();
+
+    // Call for the next frame
+    requestAnimationFrame(computeFrame);
+}
+
+function checkCollisions(){
+
+    const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
+
+    
+
     pacmanHitbox.setFromObject(pacmanModel);
     pacmanModel.geometry.computeBoundingSphere();
     pacmanModel.geometry.boundingSphere.getBoundingBox(pacmanHitbox)
     pacmanHitbox.applyMatrix4(pacmanModel.matrixWorld);
     
+    const ghost = sceneElements.sceneGraph.getObjectByName("ghost_1");
     const ghostHitbox = ghostHitboxes.find((hitbox) => hitbox.name === "ghost_1_hitbox");
-    const ghostHitboxHelper = sceneElements.sceneGraph.getObjectByName("ghost_1_hitboxHelper");
     const ghostBody = sceneElements.sceneGraph.getObjectByName("ghost_1_body");
-
-    
     if(ghostHitbox){
         ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
-        ghostHitboxHelper.position.copy(ghost.position);
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
             console.log("yes on ghost ");
             // remover hitbox
@@ -557,6 +542,7 @@ function computeFrame(time) {
             //ghostHitboxes.pop(ghostHitbox);
         }
     }
+
     const powerUpHitbox = powerUpHitboxes.find((hitbox) => hitbox.name === "powerup_1_hitbox");
     if(powerUpHitbox){
         if(pacmanHitbox.intersectsBox(powerUpHitbox)){
@@ -566,14 +552,4 @@ function computeFrame(time) {
         }
     }
 
-    */
-
-    // Rendering
-    helper.render(sceneElements);
-
-    // NEW --- Update control of the camera
-    sceneElements.control.update();
-
-    // Call for the next frame
-    requestAnimationFrame(computeFrame);
 }

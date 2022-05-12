@@ -288,7 +288,7 @@ function loadLevel(levelName){
     sceneElements.sceneGraph.add(pacman);
     
     
-    pacman.rotation.x = -Math.PI/2;
+    //pacman.rotation.x = -Math.PI/2;
     
 
     // ************************** //

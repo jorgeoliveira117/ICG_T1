@@ -409,12 +409,12 @@ function computeFrame(time) {
     sceneElements.camera.lookAt(pacman.position);
     if(keyA || keyW || keyD || keyS)
         checkBounds(delta);
+    
     // ************************** //
     // Camera
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
-    
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
     raycaster.set(pacman.position, dir);
@@ -431,6 +431,7 @@ function computeFrame(time) {
         sceneElements.camera.position.copy(cameraDefaultPos);
     }
     /*
+    
     */
     checkCollisions();
     animatePacman();

@@ -182,6 +182,24 @@ function load3DObjects(sceneGraph) {
     ghostBody.position.set(0, -0.5, 0);
     ghostBody.name = ghost.name + "_body";
     ghost.add(ghostBody);
+    // Skirt
+    const ghostSkirt = new THREE.Group();
+    ghostSkirt.position.set(0, -1.1, 0);
+
+    const ghostSkirtGeometry = new THREE.CylinderGeometry( 0.2, 0.1, 0.3, 3 );
+    var ghostSkirtElement;
+    const radius = 0.6;
+    const nPoints = 10;
+    // https://math.stackexchange.com/questions/227481/x-points-around-a-circle
+    for(var i = 0; i < nPoints; i++){
+        ghostSkirtElement = new THREE.Mesh( ghostSkirtGeometry, ghostMaterial );
+        ghostSkirt.add(ghostSkirtElement);
+        ghostSkirtElement.position.x = radius * Math.cos((i * 2 * Math.PI) / nPoints);
+        ghostSkirtElement.position.z = radius * Math.sin((i * 2 * Math.PI) / nPoints);
+    }
+    ghostSkirt.name = ghost.name + "_skirt";
+    ghost.add(ghostSkirt);
+
 
     // Tail
     const ghostTail = new THREE.Group();
@@ -198,7 +216,6 @@ function load3DObjects(sceneGraph) {
     var ghostTailBubble, rPos;
     for(var i = 0; i < 15; i++){
         ghostTailBubble = new THREE.Mesh(ghostTailSphere, ghostTailSphereMaterial);
-        ghostTail.speed = Math.random()*ghostTail.MAX_SPEED + ghostTail.MIN_SPEED;
         ghostTail.add(ghostTailBubble);
         rPos = getRandomPosition(0.6, 0.4);
         ghostTailBubble.position.set(rPos.x, rPos.y, rPos.z);
@@ -270,11 +287,14 @@ function load3DObjects(sceneGraph) {
     ghostScaredFace.add(ghostLeftEyeScared);
     ghostScaredFace.add(ghostMouth);
     ghost.add(ghostScaredFace);
-    
+
     // Scared properties 
     ghostBody.material = ghostScaredMaterial;
     ghostHead.material = ghostScaredMaterial;
     ghostTail.traverse((child) => {
+        child.material = ghostScaredMaterial;
+    })
+    ghostSkirt.traverse((child) => {
         child.material = ghostScaredMaterial;
     })
     ghostRightEye.visible = false;
@@ -287,6 +307,9 @@ function load3DObjects(sceneGraph) {
     ghostHead.material = ghostMaterial;
     ghostTail.traverse((child) => {
         child.material = ghostTailSphereMaterial;
+    })
+    ghostSkirt.traverse((child) => {
+        child.material = ghostMaterial;
     })
     ghostRightEye.visible = true;
     ghostLeftEye.visible = true;
@@ -319,7 +342,7 @@ function getRandomPosition(radius, y){
     if (Math.floor(Math.random() * 2) - 1 < 0 )
         z *= -1;
 
-    return new THREE.Vector3(x, Math.random() * y, z);
+    return new THREE.Vector3(x, y, z);
 }
 
 var mouseX = 0;

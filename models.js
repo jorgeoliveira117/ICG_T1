@@ -43,6 +43,8 @@ const ghostScaredEyesMaterial = new THREE.MeshBasicMaterial( { color: 0xF5F0CB, 
 const ghostScaredMaterial = new THREE.MeshPhongMaterial({ color: 0x2129FF, emissive: 0x2129FF, specular: 0x2129FF, shininess: 20 });
 
 
+const portalRingMaterial = new THREE.MeshToonMaterial( { color: 0xB16CC4, side: THREE.DoubleSide } );
+
 const models = {
 
     // ************************** //
@@ -125,8 +127,8 @@ const models = {
         pacmanGroup.CAMERA_DIRECTION = new THREE.Vector3();
         pacmanGroup.CAMERA_DIRECTION.subVectors(pacmanGroup.CAMERA_DEFAULT_POS, pacman.position).normalize();
         pacmanGroup.CAMERA_SPEED = 5;
-        pacmanGroup.MOV_SPEED_X = 10;
-        pacmanGroup.MOV_SPEED_Z = 10;
+        pacmanGroup.MOV_SPEED_X = 30;
+        pacmanGroup.MOV_SPEED_Z = 30;
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
         pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
         pacmanGroup.WALL_COLLISION_RADIUS = 1;
@@ -291,8 +293,8 @@ const models = {
         ghost.BOB_SPEED = 0.25;
         ghost.BOB_MAX_HEIGHT = 2.4;
         ghost.BOB_MIN_HEIGHT = 1.8;
-        ghost.MOV_SPEED_X = 19.5;
-        ghost.MOV_SPEED_Z = 19.5;
+        ghost.MOV_SPEED_X = 9.5;
+        ghost.MOV_SPEED_Z = 9.5;
         ghost.ROTATION_SPEED = 2*Math.PI;
         ghost.PATH_FINDING = "RANDOM";
         //ghost.PATH_FINDING = "SHORTEST";
@@ -326,6 +328,72 @@ const models = {
         const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x362f31, side: THREE.DoubleSide });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         return ground;
+    },
+
+    // ************************** //
+    // Portal
+    // ************************** //
+    createPortal: function(n, size){
+        const portalGeometry = new THREE.BoxGeometry( size, 4.1, size );
+        const portalMaterial = new THREE.MeshToonMaterial( {color: 0x1C121F} );
+
+        const portal = new THREE.Mesh( portalGeometry, portalMaterial );
+        portal.name = "portal_" + n;
+
+        const light = new THREE.PointLight( 0xDAA0EB, 5, 20 );
+        portal.add( light );
+
+        const portalRingGeometry = new THREE.RingGeometry( 2*size/5, size/3, 32 );
+        const portalRingAlmostGeometry = new THREE.RingGeometry( size/5, size/4, 32, 1, 0, 3*Math.PI/4 );
+        const portalRingHalfGeometry = new THREE.RingGeometry( size/7, size/6, 32, 1, 0, Math.PI/2 );
+        const portalRingQuarterGeometry = new THREE.RingGeometry( size/10, size/8, 32, 1, 0, Math.PI/4 );
+        
+        const directions = [
+            {name: "_down",  x: 0,       z: -1},
+            {name: "_up",    x: 0,       z: 1},
+            {name: "_left",  x: 1,    z: 0},
+            {name: "_right", x: -1,   z: 0}
+        ];
+        directions.forEach((dir) => {
+            const portalOuterRing = new THREE.Mesh( portalRingGeometry, portalRingMaterial );
+            const portalThirdRing = new THREE.Mesh( portalRingAlmostGeometry, portalRingMaterial );
+            const portalQuarterRing = new THREE.Mesh( portalRingHalfGeometry, portalRingMaterial );
+            const portalSexthRing = new THREE.Mesh( portalRingQuarterGeometry, portalRingMaterial );
+            portalOuterRing.name = portal.name + dir.name +  "_ring_1";
+            portalThirdRing.name = portal.name + dir.name +  "_ring_2";
+            portalQuarterRing.name = portal.name + dir.name +  "_ring_3";
+            portalSexthRing.name = portal.name + dir.name +  "_ring_4";
+            portalOuterRing.BOB_MAX_DISTANCE = 0.8;
+            portalOuterRing.BOB_SPEED = 0.4;
+            portalThirdRing.BOB_SPEED = 0.6;
+            portalQuarterRing.BOB_SPEED = 0.5;
+            portalSexthRing.BOB_SPEED = 0.8;
+            portalOuterRing.ROTATION_SPEED = 0.5;
+            portalThirdRing.ROTATION_SPEED = 0.8;
+            portalQuarterRing.ROTATION_SPEED = 1.0;
+            portalSexthRing.ROTATION_SPEED = 1.6;
+            portal.add( portalOuterRing );
+            portal.add( portalThirdRing );
+            portal.add( portalQuarterRing );
+            portal.add( portalSexthRing );
+            portalOuterRing.position.z += dir.z*size/2 + dir.z / 100;
+            portalThirdRing.position.z += dir.z*size/2 + dir.z / 100;
+            portalQuarterRing.position.z += dir.z*size/2 + dir.z / 100;
+            portalSexthRing.position.z += dir.z*size/2 + dir.z / 100;
+            portalOuterRing.position.x += dir.x*size/2 + dir.x / 100;
+            portalThirdRing.position.x += dir.x*size/2 + dir.x / 100;
+            portalQuarterRing.position.x += dir.x*size/2 + dir.x / 100;
+            portalSexthRing.position.x += dir.x*size/2 + dir.x / 100;
+            
+            portalOuterRing.rotation.y = Math.PI/2 * dir.x;
+            portalThirdRing.rotation.y = Math.PI/2 * dir.x;
+            portalQuarterRing.rotation.y = Math.PI/2 * dir.x;
+            portalSexthRing.rotation.y = Math.PI/2 * dir.x;
+        })
+        
+        
+
+        return portal;
     },
 
 }

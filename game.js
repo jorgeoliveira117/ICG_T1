@@ -40,6 +40,8 @@ var levelHeightCoord = 0;
 const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
 const level = [];
+var portalsN = 0;
+
 
 // Movement properties
 const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
@@ -276,7 +278,10 @@ function loadLevel(levelName){
                 default:
                     // Portal
                     portals.push({num: level[line][char], coordX: char, coordZ: line});
-                    console.log(portals);
+                    const portal = models.createPortal(portalsN, BLOCK_SIZE);
+                    portalsN++;
+                    portal.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 2, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
+                    sceneElements.sceneGraph.add(portal);
                     break;
             }
         }
@@ -328,13 +333,9 @@ function loadLevel(levelName){
     });
 
     gameIsReady = true;
+
 }
 
-// Create and insert in the scene graph the models of the 3D scene
-function load3DObjects(sceneGraph) {
-
-    
-}
 
 function getRandomPosition(radius, y){
     // for x and z to be inside of the circle:
@@ -405,7 +406,10 @@ function computeFrame(time) {
     
 
     movePacman();
-    moveGhosts();
+    checkPacmanBounds();
+    //moveGhosts();
+
+
     // ************************** //
     // Camera
     // ************************** //
@@ -439,6 +443,7 @@ function computeFrame(time) {
     checkCollisions();
     animatePacman();
     animateGhosts();
+    animatePortals();
 
     // Rendering
     helper.render(sceneElements);
@@ -493,8 +498,9 @@ function checkCollisions(){
     });
 }
 
-// Check if a side 
+
 function checkWalls(){
+    // Check if Pacman is next to a wall 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
 
     // reset collisions
@@ -527,7 +533,7 @@ function checkWalls(){
     
 }
 
-function checkBounds(delta){
+function checkWallBounds(delta){
     // checks if pacman is inside a wall and smoothly moves out
 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
@@ -544,6 +550,35 @@ function checkBounds(delta){
     if(getBlock(pacman.position.x - pacman.WALL_COLLISION_RADIUS, pacman.position.z) === "#")
         pacman.position.x += pacman.MOV_SPEED_X * delta * 1.2;
 
+}
+
+function checkPacmanBounds(){
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+
+    // Check if Pacman is out of bounds
+    // This happens when the window loses focus and after refreshing
+    if( pacman.position.x < 0 || pacman.position.x > levelWidthCoord
+        || pacman.position.z < 0 || pacman.position.z > levelHeightCoord){
+            // Set position to spawn
+            pacman.position.copy(pacmanSpawnPoint);
+            return;
+    }
+
+    // Check if block is a portal
+    const block = getBlock(pacman.position.x, pacman.position.z);
+    const pacmanBlock = getCoords(pacman.position.x, pacman.position.z);
+    if(block != " " && !isNaN(block)){
+        portals.forEach((portal) => {
+            if(portal.num.toString() == block
+            && portal.coordX != pacmanBlock.x 
+            && portal.coordX != pacmanBlock.z){
+                const portalCoords = getBlockCenter(portal.coordX, portal.coordZ);
+                pacman.position.x = portalCoords.x;
+                pacman.position.z = portalCoords.z;
+                pacman.position.y += 10;
+            }
+        })
+    }
 }
 
 function getBlock(x, z){
@@ -634,6 +669,117 @@ function animateGhosts(){
         }
     })
 }
+const directions = [
+    {name: "_down",  x: 0,    z: -1},
+    {name: "_up",    x: 0,    z: 1},
+    {name: "_left",  x: 1,    z: 0},
+    {name: "_right", x: -1,   z: 0}
+];
+function animatePortals(){
+    
+    for(var i = 0; i < portalsN; i++){
+        directions.forEach((dir) => {
+            const portalOuterRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_1");
+            const portalThirdRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_2");
+            const portalQuarterRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_3");
+            const portalSexthRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_4");
+            
+            portalOuterRing.position.z += portalOuterRing.BOB_SPEED * dir.z * delta;
+            portalOuterRing.position.x += portalOuterRing.BOB_SPEED * dir.x * delta;
+            portalOuterRing.rotation.z += portalOuterRing.ROTATION_SPEED * dir.z * delta;
+            portalOuterRing.rotation.x += portalOuterRing.ROTATION_SPEED * dir.x * delta;
+            if(dir.z != 0){
+                if(dir.z*portalOuterRing.position.z < BLOCK_SIZE/2 + 1/100 ){
+                    portalOuterRing.BOB_SPEED *= -1;
+                    portalOuterRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z/100;
+                }
+                else if(dir.z*portalOuterRing.position.z > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalOuterRing.BOB_SPEED *= -1;
+                    portalOuterRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z*portalOuterRing.BOB_MAX_DISTANCE - dir.z/100;
+                }
+            }else{
+                if(dir.x*portalOuterRing.position.x < BLOCK_SIZE/2 + 1/100 ){
+                    portalOuterRing.BOB_SPEED *= -1;
+                    portalOuterRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x/100;
+                }
+                else if(dir.x*portalOuterRing.position.x > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalOuterRing.BOB_SPEED *= -1;
+                    portalOuterRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x*portalOuterRing.BOB_MAX_DISTANCE - dir.x/100;
+                }
+            }
+            portalThirdRing.position.z += portalThirdRing.BOB_SPEED * dir.z * delta;
+            portalThirdRing.position.x += portalThirdRing.BOB_SPEED * dir.x * delta;
+            portalThirdRing.rotation.z += portalThirdRing.ROTATION_SPEED * dir.z * delta;
+            portalThirdRing.rotation.x += portalThirdRing.ROTATION_SPEED * dir.x * delta;
+            if(dir.z != 0){
+                if(dir.z*portalThirdRing.position.z < BLOCK_SIZE/2 + 1/100 ){
+                    portalThirdRing.BOB_SPEED *= -1;
+                    portalThirdRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z/100;
+                }
+                else if(dir.z*portalThirdRing.position.z > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalThirdRing.BOB_SPEED *= -1;
+                    portalThirdRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z*portalOuterRing.BOB_MAX_DISTANCE - dir.z/100;
+                }
+            }else{
+                if(dir.x*portalThirdRing.position.x < BLOCK_SIZE/2 + 1/100 ){
+                    portalThirdRing.BOB_SPEED *= -1;
+                    portalThirdRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x/100;
+                }
+                else if(dir.x*portalThirdRing.position.x > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalThirdRing.BOB_SPEED *= -1;
+                    portalThirdRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x*portalOuterRing.BOB_MAX_DISTANCE - dir.x/100;
+                }
+            }
+            portalQuarterRing.position.z += portalQuarterRing.BOB_SPEED * dir.z * delta;
+            portalQuarterRing.position.x += portalQuarterRing.BOB_SPEED * dir.x * delta;
+            portalQuarterRing.rotation.z += portalQuarterRing.ROTATION_SPEED * dir.z * delta;
+            portalQuarterRing.rotation.x += portalQuarterRing.ROTATION_SPEED * dir.x * delta; 
+            if(dir.z != 0){
+                if(dir.z*portalQuarterRing.position.z < BLOCK_SIZE/2 + 1/100 ){
+                    portalQuarterRing.BOB_SPEED *= -1;
+                    portalQuarterRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z/100;
+                }
+                else if(dir.z*portalQuarterRing.position.z > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalQuarterRing.BOB_SPEED *= -1;
+                    portalQuarterRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z*portalOuterRing.BOB_MAX_DISTANCE - dir.z/100;
+                }
+            }else{
+                if(dir.x*portalQuarterRing.position.x < BLOCK_SIZE/2 + 1/100 ){
+                    portalQuarterRing.BOB_SPEED *= -1;
+                    portalQuarterRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x/100;
+                }
+                else if(dir.x*portalQuarterRing.position.x > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalQuarterRing.BOB_SPEED *= -1;
+                    portalQuarterRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x*portalOuterRing.BOB_MAX_DISTANCE - dir.x/100;
+                }
+            }
+            portalSexthRing.position.z += portalSexthRing.BOB_SPEED * dir.z * delta;
+            portalSexthRing.position.x += portalSexthRing.BOB_SPEED * dir.x * delta;
+            portalSexthRing.rotation.z += portalSexthRing.ROTATION_SPEED * dir.z * delta;
+            portalSexthRing.rotation.x += portalSexthRing.ROTATION_SPEED * dir.x * delta;
+            if(dir.z != 0){
+                if(dir.z*portalSexthRing.position.z < BLOCK_SIZE/2 + 1/100 ){
+                    portalSexthRing.BOB_SPEED *= -1;
+                    portalSexthRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z/100;
+                }
+                else if(dir.z*portalSexthRing.position.z > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalSexthRing.BOB_SPEED *= -1;
+                    portalSexthRing.position.z = dir.z*BLOCK_SIZE/2 + dir.z*portalOuterRing.BOB_MAX_DISTANCE - dir.z/100;
+                }
+            }else{
+                if(dir.x*portalSexthRing.position.x < BLOCK_SIZE/2 + 1/100 ){
+                    portalSexthRing.BOB_SPEED *= -1;
+                    portalSexthRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x/100;
+                }
+                else if(dir.x*portalSexthRing.position.x > BLOCK_SIZE/2 + portalOuterRing.BOB_MAX_DISTANCE){
+                    portalSexthRing.BOB_SPEED *= -1;
+                    portalSexthRing.position.x = dir.x*BLOCK_SIZE/2 + dir.x*portalOuterRing.BOB_MAX_DISTANCE - dir.x/100;
+                }
+            }
+        });
+
+    }
+}
 
 // ************************** //
 // Movements
@@ -651,9 +797,8 @@ function movePacman(){
     if (keyS && !wallCollision.back)
         pacman.translateZ(pacman.MOV_SPEED_Z * delta);
     sceneElements.camera.lookAt(pacman.position);
-    checkBounds(delta);
+    checkWallBounds(delta);
 }
-
 
 function moveGhosts(){
     ghosts.forEach((ghost) => {

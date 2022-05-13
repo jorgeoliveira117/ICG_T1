@@ -275,13 +275,8 @@ function loadLevel(levelName){
                     break;
                 default:
                     // Portal
-                    const portal = {};
-                    portal.num = level[line][char];
-                    if(portals.find((p) => (p.num === level[line][char])))
-                        portal.type = "B";
-                    else
-                        portal.type = "A";
-                    portals.push(portal);
+                    portals.push({num: level[line][char], coordX: char, coordZ: line});
+                    console.log(portals);
                     break;
             }
         }
@@ -660,11 +655,6 @@ function movePacman(){
 }
 
 
-function lerp (start, end, amount){
-    // Taken from https://codepen.io/ma77os/pen/OJPVrP
-    return (1-amount) * start + amount * end;
-}
-
 function moveGhosts(){
     ghosts.forEach((ghost) => {
         
@@ -698,9 +688,7 @@ function moveGhosts(){
                 // Check for direction in the new path, if there's one
                 if(ghost.path.length > 0){
                     nextPath = ghost.path[0];
-                    
                     const nextPathBlock = getCoords(nextPath.x, nextPath.z);
-                    
                     const direction = MOVE_DIRECTIONS.find(
                         (dir) => 
                         dir.xBias == (currBlock.x - nextPathBlock.x) 
@@ -721,19 +709,15 @@ function moveGhosts(){
         }
         // If the ghost doesn't have a path to follow
         if(ghost.path.length == 0){
-            // If the ghost is in the same block as pacman
-            const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-            const pacmanPos = getCoords(pacman.position.x, pacman.position.z);
-
-            if(ghost.isScared)
+            if(ghost.isScared){
                 console.log("Scared ghost");
+                const path = getPathToCorner(ghost.position.x, ghost.position.z);
+                ghost.path = path;
+            }
             else{
                 if(ghost.PATH_FINDING == "SHORTEST"){
-                    const path = getShortestPathToPacman(ghost.position.x, ghost.position.z);
-                    
-                    // Remove first element as it's not needed;
-                    //path.shift(); 
-
+                    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+                    const path = getShortestPathTo(ghost.position.x, ghost.position.z, pacman.position.x, pacman.position.z);
                     ghost.path = path;
                 }else if(ghost.PATH_FINDING == "RANDOM"){
                     const path = getRandomPath(ghost.position.x, ghost.position.z);
@@ -791,18 +775,13 @@ function getRandomPath(x, z){
         const adjacentBlocks = findAdjacentBlocks(path[i].x, path[i].z);
         pathCoords.push(getBlockCenter(path[i].x, path[i].z));
         if(adjacentBlocks.length > 2){
-            console.log("adjancente");
             break
         }
     }
     return pathCoords;
 }
 
-function getShortestPathToPacman(x, z){
-    // Adapted from
-    // https://medium.com/@manpreetsingh.16.11.87/shortest-path-in-a-2d-array-java-653921063884
-    
-    // Copy the map to a new variable (Shallow copy)
+function getMapCopy(){
     var map = [];
     var line = [];
     for(var i = 0; i < level.length; i++){
@@ -812,25 +791,38 @@ function getShortestPathToPacman(x, z){
         }
         map.push(line);
     }
+    return map;
+}
+
+function getShortestPathTo(x, z, destX, destZ){
+    // Adapted from
+    // https://medium.com/@manpreetsingh.16.11.87/shortest-path-in-a-2d-array-java-653921063884
+    
+    // Copy the map to a new variable (Shallow copy)
+    var map = getMapCopy();
+    
 
     // Get position in the map
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    const pacmanPos = getCoords(pacman.position.x, pacman.position.z);
+    const destPos = getCoords(destX, destZ);
     const ghostPos = getCoords(x, z);
+
+    if(ghostPos.x == destPos.x && ghostPos.z == destPos.z){
+        return [getBlockCenter(ghostPos.x,ghostPos.z)];
+    }
 
     // Create a queue with nodes
     const sourceNode = {x: ghostPos.x, z: ghostPos.z, previous: null};
     const queue = [sourceNode];
     var popedNode, tries = 0;
     
-    console.log("Finding path from [" + ghostPos.x + ", " + ghostPos.z + "] to [" + pacmanPos.x + ", " + pacmanPos.z + "]")
+    console.log("Finding path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "]")
     while(queue.length > 0){
         tries++;
         popedNode = queue.shift();
 
         // Check if this Node represents the block pacman is in
-        if(popedNode.x == pacmanPos.x && popedNode.z == pacmanPos.z){
-            console.log("Found a path to Pacman after searching " + tries + " blocks.");
+        if(popedNode.x == destPos.x && popedNode.z == destPos.z){
+            console.log("Found a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
             //printPath(generatePath(popedNode));
             return generatePath(popedNode);
         }
@@ -851,9 +843,49 @@ function getShortestPathToPacman(x, z){
 
     }
 
-
-    console.log("Couldn't find a path to Pacman after searching " + tries + " blocks.");
+    console.log("Couldn't find a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
     return [];
+}
+
+function getPathToCorner(x, z){
+    // Finds shortest path to the closest corner
+
+    var quarter = "";
+    // Find which quarter of the map it is
+    if(z > levelHeight / 2)
+        quarter += "BOTTOM";
+    else    
+        quarter += "TOP";
+    if(x > levelWidth / 2)
+        quarter += "_RIGHT";
+    else    
+        quarter += "_LEFT";    
+
+    switch(quarter){
+        case "TOP_RIGHT":
+            getClosestBlockTo(0, levelHeight-1);
+            break;
+        case "TOP_LEFT":
+            getClosestBlockTo(0, 0);
+            break;
+        case "BOTTOM_RIGHT":
+            getClosestBlockTo(levelWidth-1,levelHeight-1);
+            break;
+        case "BOTTOM_LEFT":
+            getClosestBlockTo(levelWidth-1,0);
+            break;
+    }
+
+    var cornerX = 0;
+    var cornerZ = 0;
+
+    return getShortestPathTo(x, z, cornerX, cornerZ);
+}
+
+function getClosestBlockTo(x, z){
+    // returns the closest walkable block to the coordinates
+
+
 }
 
 function generatePath(pathNode){
@@ -873,4 +905,9 @@ function printPath(path){
             pathString += "["+ block.x + ", " + block.z + "] => ";
         });
     console.log(pathString.substring(0, pathString.length -4));
+}
+
+function lerp (start, end, amount){
+    // Taken from https://codepen.io/ma77os/pen/OJPVrP
+    return (1-amount) * start + amount * end;
 }

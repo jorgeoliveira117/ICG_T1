@@ -127,8 +127,8 @@ const models = {
         pacmanGroup.CAMERA_DIRECTION = new THREE.Vector3();
         pacmanGroup.CAMERA_DIRECTION.subVectors(pacmanGroup.CAMERA_DEFAULT_POS, pacman.position).normalize();
         pacmanGroup.CAMERA_SPEED = 5;
-        pacmanGroup.MOV_SPEED_X = 30;
-        pacmanGroup.MOV_SPEED_Z = 30;
+        pacmanGroup.MOV_SPEED_X = 10;
+        pacmanGroup.MOV_SPEED_Z = 10;
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
         pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
         pacmanGroup.WALL_COLLISION_RADIUS = 1;
@@ -283,7 +283,6 @@ const models = {
         }
 
         ghost.setNotScared();
-        
     
         const ghostHitboxHelper = new THREE.BoxHelper( ghost, 0x00ff00 );
         ghostHitboxHelper.name = ghost.name + "_hitboxHelper";

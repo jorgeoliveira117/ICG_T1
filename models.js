@@ -302,6 +302,7 @@ const models = {
         ghost.isAligning = false;
         ghost.isAligningPosition = false;
         ghost.isAligningRotation = false;
+        ghost.isScared = false;
         return ghost;
     },
 

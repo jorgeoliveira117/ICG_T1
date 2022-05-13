@@ -227,6 +227,8 @@ function loadLevel(levelName){
             switch(level[line][char]){
                 case " ":
                     // Space
+                case "-":
+                    // Unreachable space
                     break;
                 case "#":
                     const wall = models.createWall(wallN, BLOCK_SIZE);
@@ -665,66 +667,20 @@ function lerp (start, end, amount){
 
 function moveGhosts(){
     ghosts.forEach((ghost) => {
-        
-        /*
-
-        ghost.position.x = lerp(ghost.position.x, blockCenter.x, ghost.MOV_SPEED_X * delta);
-        ghost.position.z = lerp(ghost.position.z, blockCenter.z, ghost.MOV_SPEED_Z * delta);
-        ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
-                
-        // If alignining move to the center of the block and rotate
-        if(ghost.isAligning){
-            // Move to the center of the block
-            if(ghost.isAligningPosition){
-                console.log( ghost.currentBlock.x * BLOCK_SIZE);
-                console.log(levelWidthCoord);
-                const blockCenter = {
-                    x: levelWidthCoord - ghost.currentBlock.x * BLOCK_SIZE - BLOCK_SIZE/2,
-                    z: levelHeightCoord - ghost.currentBlock.z * BLOCK_SIZE - BLOCK_SIZE/2
-                }
-                console.log(ghost.position)
-                console.log(blockCenter)
-               
-                ghost.position.x = lerp(ghost.position.x, blockCenter.x, ghost.MOV_SPEED_X * delta);
-                ghost.position.z = lerp(ghost.position.z, blockCenter.z, ghost.MOV_SPEED_Z * delta);
-                if(ghost.position.x > blockCenter.x - POSITION_ERROR 
-                    && ghost.position.x < blockCenter.x + POSITION_ERROR
-                    && ghost.position.z > blockCenter.z - POSITION_ERROR 
-                    && ghost.position.z < blockCenter.z + POSITION_ERROR)
-                    ghost.isAligningPosition = false;
-            }
-
-            // Rotate to the desired angle
-            if(ghost.isAligningRotation){
-                ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
-                
-                if(ghost.rotation.y >= ghost.direction.rotationAngle 
-                    || ghost.rotation.y >= ghost.direction.rotationAngle - ROTATION_ERROR)
-                    ghost.isAligningRotation = false;
-            }            
-
-            if(!ghost.isAligningPosition && !ghost.isAligningRotation)
-                ghost.isAligning = false;
-            return;
-        }
-        */
-
+      
         if(ghost.path.length > 0){
             var nextPath = ghost.path[0];
-
-            //ghost.position.x = lerp(ghost.position.x, nextPath.x, ghost.MOV_SPEED_X * delta);
-            //ghost.position.z = lerp(ghost.position.z, nextPath.z, ghost.MOV_SPEED_Z * delta);
-            
-            ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
-            
             const currBlock = getCoords(ghost.position.x, ghost.position.z);
             
+            // Check if ghost is in the middle of the target path block
             if(ghost.position.x > nextPath.x - POSITION_ERROR 
                 && ghost.position.x < nextPath.x + POSITION_ERROR
                 && ghost.position.z > nextPath.z - POSITION_ERROR 
                 && ghost.position.z < nextPath.z + POSITION_ERROR){
                 
                 ghost.path.shift();
+
+                // Check for direction in the new path, if there's one
                 if(ghost.path.length > 0){
                     nextPath = ghost.path[0];
                     
@@ -744,59 +700,79 @@ function moveGhosts(){
                 }
             }
             
+            // Move and rotate if there's a path to follow
             if(ghost.path.length > 0){
+                ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
                 ghost.position.x += (ghost.MOV_SPEED_X * ghost.direction.xBias * delta);
                 ghost.position.z += (ghost.MOV_SPEED_Z * ghost.direction.zBias * delta);
             }
             
         }
-        // If the ghost is in a new block, get the next path instruction
-        
-
         // If the ghost doesn't have a path to follow
         if(ghost.path.length == 0){
-            if(ghost.PATH_FINDING == "SHORTEST"){
-                
-                const path = getShortestPathToPacman(ghost.position.x, ghost.position.z);
-                // Remove first element as it's not needed;
-                //path.shift(); 
-                ghost.path = path;
+            // If the ghost is in the same block as pacman
+            const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+            const pacmanPos = getCoords(pacman.position.x, pacman.position.z);
 
-            }else if(ghost.PATH_FINDING == "RANDOM"){
-                //const path = getRandomPath(ghost.position.x, ghost.position.z);
-                //ghost.path = path;
+            if(ghost.isScared)
+                console.log("Scared ghost");
+            else{
+                if(ghost.PATH_FINDING == "SHORTEST"){
+                    const path = getShortestPathToPacman(ghost.position.x, ghost.position.z);
+                    
+                    // Remove first element as it's not needed;
+                    //path.shift(); 
+
+                    ghost.path = path;
+                }else if(ghost.PATH_FINDING == "RANDOM"){
+                    const path = getRandomPath(ghost.position.x, ghost.position.z);
+                    ghost.path = path;
+                }
             }
         }
 
-        /*
-        // Verify if the direction is still the same
-        // If not, start aligning and define new direction
-        if(ghost.path.length > 0 ){
-            const nextPath = ghost.path[0];
-            // Get the direction
-            const direction = MOVE_DIRECTIONS.find(
-                (dir) => 
-                    dir.xBias == (currBlock.x - nextPath.x) 
-                    && dir.zBias == (currBlock.z - nextPath.z)
-                );
-            // Check if it's different
-            console.log(currBlock);
-            console.log(nextPath);
-
-            if(direction.movement !== ghost.direction.movement){
-                ghost.direction = direction;
-                ghost.isAligning = true;
-                ghost.isAligningPosition = true;
-                ghost.isAligningRotation = true;
-            }
-        }
-        if(ghost.path.length > 0 && !ghost.isAligning){
-            ghost.translateX(ghost.MOV_SPEED_X * ghost.direction.xBias * delta);
-            ghost.translateZ(ghost.MOV_SPEED_Z * ghost.direction.zBias * delta);
-        }
-
-        */
     });
+}
+
+function getRandomPath(x, z){
+
+    const ghostPos = getCoords(x, z);
+
+    const options = [];
+    // Check adjacent nodes
+    if(ghostPos.x > 0 && level[ghostPos.z][ghostPos.x-1] != "#")
+        options.push({x: -1, z: 0, name: "LEFT"});
+    if(ghostPos.x + 1 < levelWidth && level[ghostPos.z][ghostPos.x+1] != "#")
+        options.push({x: 1, z: 0, name: "RIGHT"});
+    if(ghostPos.z > 0 && level[ghostPos.z-1][ghostPos.x] != "#")
+        options.push({x: 0, z: -1, name: "DOWN"});
+    if(ghostPos.z + 1 < levelHeight && level[ghostPos.z+1][ghostPos.x] != "#")
+        options.push({x: 0, z: 1, name: "UP"});
+
+    const choice = options[Math.floor(Math.random() * options.length)];
+
+    const coords = {x: ghostPos.x + choice.x, z: ghostPos.z + choice.z};
+    const path = [ getBlockCenter(ghostPos.x, ghostPos.z), getBlockCenter(coords.x, coords.z)];
+    var findingPath = true;
+
+    
+    while(findingPath){
+        if(
+            coords.x + choice.x > 0 && coords.x + choice.x < levelWidth && 
+            coords.z + choice.z > 0 && coords.z + choice.z < levelHeight &&
+            level[coords.z + choice.z][coords.x + choice.x] != "#"
+        ){
+            coords.x += choice.x;
+            coords.z += choice.z;
+            path.push(getBlockCenter(coords.x, coords.z));
+        }else{
+            findingPath = false;
+        }
+    }
+    /*
+*/
+    console.log(path);
+    return path;
 }
 
 function getShortestPathToPacman(x, z){
@@ -857,10 +833,6 @@ function getShortestPathToPacman(x, z){
     return [];
 }
 
-function getRandomPath(x, z){
-
-}
-
 function generatePath(pathNode){
     // Generates the path from a path node
     const path = [];
@@ -872,19 +844,6 @@ function generatePath(pathNode){
     return path.reverse();
 }
 
-/*
-function generatePath(pathNode){
-    // Generates the path from a path node
-    const path = [];
-    path.push({x: pathNode.x, z: pathNode.z});
-    while(pathNode.previous){
-        path.push({x: pathNode.previous.x, z: pathNode.previous.z});
-        pathNode = pathNode.previous;
-    }
-
-    return path.reverse();
-}
-*/
 function printPath(path){
     var pathString = "";
     path.forEach((block) => {

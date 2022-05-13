@@ -310,7 +310,7 @@ const models = {
     // Wall
     // ************************** //
     createWall: function(n, size){
-        const wallGeometry = new THREE.BoxGeometry( size, 4, size );
+        const wallGeometry = new THREE.BoxGeometry( size, 4.1, size );
         const wall = new THREE.Mesh( wallGeometry, wallMaterial );
         wall.name = "wall_" + n;
         wall.receiveShadow = true;

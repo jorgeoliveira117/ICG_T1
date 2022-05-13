@@ -667,10 +667,25 @@ function lerp (start, end, amount){
 
 function moveGhosts(){
     ghosts.forEach((ghost) => {
-      
+        
+        // Check if ghost is out of bounds
+        // This happens when the window loses focus and after refreshing
+        if( ghost.position.x < 0 || ghost.position.x > levelWidthCoord
+        || ghost.position.z < 0 || ghost.position.z > levelHeightCoord
+        || getBlock(ghost.position.x, ghost.position.z) == "#" 
+        || getBlock(ghost.position.x, ghost.position.z) == "#"){
+            // Clear path
+            ghost.path = []
+            // Set position to supposed current block
+            const newPos = getBlockCenter(ghost.currentBlock.x, ghost.currentBlock.z);
+            ghost.position.x = newPos.x;
+            ghost.position.z = newPos.z;
+        }
+        
         if(ghost.path.length > 0){
-            var nextPath = ghost.path[0];
             const currBlock = getCoords(ghost.position.x, ghost.position.z);
+            var nextPath = ghost.path[0];
+            ghost.currentBlock = currBlock;
             
             // Check if ghost is in the middle of the target path block
             if(ghost.position.x > nextPath.x - POSITION_ERROR 
@@ -683,10 +698,6 @@ function moveGhosts(){
                 // Check for direction in the new path, if there's one
                 if(ghost.path.length > 0){
                     nextPath = ghost.path[0];
-                    
-                    console.log(ghost.position);
-                    
-                    ghost.currentBlock = currBlock;
                     
                     const nextPathBlock = getCoords(nextPath.x, nextPath.z);
                     
@@ -734,45 +745,57 @@ function moveGhosts(){
     });
 }
 
+function findAdjacentBlocks(x, z){
+    const options = [];
+    // Check adjacent nodes
+    if(x > 0 && level[z][x-1] != "#")
+        options.push({x: -1, z: 0, name: "LEFT"});
+    if(x + 1 < levelWidth && level[z][x+1] != "#")
+        options.push({x: 1, z: 0, name: "RIGHT"});
+    if(z > 0 && level[z-1][x] != "#")
+        options.push({x: 0, z: -1, name: "DOWN"});
+    if(z + 1 < levelHeight && level[z+1][x] != "#")
+        options.push({x: 0, z: 1, name: "UP"});
+
+    return options;
+}
+
 function getRandomPath(x, z){
 
     const ghostPos = getCoords(x, z);
-
-    const options = [];
-    // Check adjacent nodes
-    if(ghostPos.x > 0 && level[ghostPos.z][ghostPos.x-1] != "#")
-        options.push({x: -1, z: 0, name: "LEFT"});
-    if(ghostPos.x + 1 < levelWidth && level[ghostPos.z][ghostPos.x+1] != "#")
-        options.push({x: 1, z: 0, name: "RIGHT"});
-    if(ghostPos.z > 0 && level[ghostPos.z-1][ghostPos.x] != "#")
-        options.push({x: 0, z: -1, name: "DOWN"});
-    if(ghostPos.z + 1 < levelHeight && level[ghostPos.z+1][ghostPos.x] != "#")
-        options.push({x: 0, z: 1, name: "UP"});
-
+    const options = findAdjacentBlocks(ghostPos.x, ghostPos.z);
     const choice = options[Math.floor(Math.random() * options.length)];
-
     const coords = {x: ghostPos.x + choice.x, z: ghostPos.z + choice.z};
-    const path = [ getBlockCenter(ghostPos.x, ghostPos.z), getBlockCenter(coords.x, coords.z)];
+    const path = [ {x: ghostPos.x, z: ghostPos.z}, {x: coords.x, z: coords.z}];
     var findingPath = true;
 
-    
+    // Find a path until next wall
     while(findingPath){
         if(
-            coords.x + choice.x > 0 && coords.x + choice.x < levelWidth && 
-            coords.z + choice.z > 0 && coords.z + choice.z < levelHeight &&
+            coords.x + choice.x >= 0 && coords.x + choice.x < levelWidth && 
+            coords.z + choice.z >= 0 && coords.z + choice.z < levelHeight &&
             level[coords.z + choice.z][coords.x + choice.x] != "#"
         ){
             coords.x += choice.x;
             coords.z += choice.z;
-            path.push(getBlockCenter(coords.x, coords.z));
+            path.push({x: coords.x, z: coords.z});
         }else{
             findingPath = false;
         }
     }
-    /*
-*/
-    console.log(path);
-    return path;
+
+    const pathCoords = [];
+    pathCoords.push(getBlockCenter(path[0].x, path[0].z));
+    // Shorten the path to the next intersection
+    for(var i = 1; i < path.length; i++){
+        const adjacentBlocks = findAdjacentBlocks(path[i].x, path[i].z);
+        pathCoords.push(getBlockCenter(path[i].x, path[i].z));
+        if(adjacentBlocks.length > 2){
+            console.log("adjancente");
+            break
+        }
+    }
+    return pathCoords;
 }
 
 function getShortestPathToPacman(x, z){

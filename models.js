@@ -291,9 +291,17 @@ const models = {
         ghost.BOB_SPEED = 0.25;
         ghost.BOB_MAX_HEIGHT = 2.4;
         ghost.BOB_MIN_HEIGHT = 1.8;
-        ghost.MOV_SPEED_X = 8;
-        ghost.MOV_SPEED_Z = 8;
-
+        ghost.MOV_SPEED_X = 9.5;
+        ghost.MOV_SPEED_Z = 9.5;
+        ghost.ROTATION_SPEED = 2*Math.PI;
+        ghost.PATH_FINDING = "RANDOM";
+        //ghost.PATH_FINDING = "SHORTEST";
+        ghost.path = [];
+        ghost.currentBlock = {x: 0, z: 0};
+        ghost.direction = {movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
+        ghost.isAligning = false;
+        ghost.isAligningPosition = false;
+        ghost.isAligningRotation = false;
         return ghost;
     },
 

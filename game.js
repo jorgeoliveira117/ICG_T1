@@ -41,6 +41,17 @@ const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
 const level = [];
 
+// Movement properties
+const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
+const MOVE_DOWN = { movement: "DOWN", xBias: 0, zBias: -1, rotationAngle: -Math.PI};
+const MOVE_LEFT = { movement: "LEFT", xBias: 1, zBias: 0, rotationAngle: Math.PI / 2};
+const MOVE_RIGHT = { movement: "RIGHT", xBias: -1, zBias: 0, rotationAngle: -Math.PI / 2};
+const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
+
+const ROTATION_ERROR = Math.PI/100;
+const POSITION_ERROR = 0.1;
+
+
 // Functions are called
 //  1. Initialize the level
 //  2. Animate
@@ -141,8 +152,8 @@ function loadLevel(levelName){
 
     levelWidth = level[0].length;
     levelHeight = level.length;
-    const levelWidthCoord = levelWidth * BLOCK_SIZE;
-    const levelHeightCoord = levelHeight * BLOCK_SIZE;
+    levelWidthCoord = levelWidth * BLOCK_SIZE;
+    levelHeightCoord = levelHeight * BLOCK_SIZE;
     // ************************** //
     // Create ground
     // ************************** //
@@ -298,10 +309,17 @@ function loadLevel(levelName){
         const ghost = models.createGhost(ghostN, ghostColor[0], ghostColor[1]);
         ghostN++;
         sceneElements.sceneGraph.add(ghost);
-        ghost.position.copy(pacmanSpawnPoint);
-        ghost.translateX(2*ghostN);
-        //ghost.position.copy(ghostSpawnPoint);
-        ghost.rotateY(Math.PI);
+        
+        //ghost.position.copy(pacmanSpawnPoint);
+
+        ghost.position.copy(ghostSpawnPoint);
+        //ghost.translateX(2*ghostN);
+
+        ghost.currentBlock = getCoords(ghost.position.x, ghost.position.z);
+        //ghost.rotateY(-Math.PI/2);
+
+        if(ghostN == 1)
+            ghost.PATH_FINDING = "SHORTEST";
         ghosts.push(ghost);
 
         // Hitbox
@@ -361,7 +379,7 @@ function handleMouseMove(e) {
     var deltaX = e.clientX - mouseX;
     mouseX = e.clientX;
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -386,33 +404,17 @@ function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
     
-    // ************************** //
-    // Pacman
-    // ************************** //
+    
     
 
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    checkWalls(delta);
-    if (keyD && !wallCollision.right) {
-        pacman.translateX(pacman.MOV_SPEED_X * delta);
-    }
-    if (keyW && !wallCollision.front) {
-        pacman.translateZ(-pacman.MOV_SPEED_Z * delta);
-    }
-    if (keyA && !wallCollision.left) {
-        pacman.translateX(-pacman.MOV_SPEED_X * delta);
-    }
-    if (keyS && !wallCollision.back) {
-        pacman.translateZ(pacman.MOV_SPEED_Z * delta);
-    }
-    sceneElements.camera.lookAt(pacman.position);
-    checkBounds(delta);
-    
+    movePacman();
+    moveGhosts();
     // ************************** //
     // Camera
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
+    /*
     
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
@@ -435,8 +437,8 @@ function computeFrame(time) {
         else
             sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
     }
-    /*
     */
+
     checkCollisions();
     animatePacman();
     animateGhosts();
@@ -556,6 +558,13 @@ function getBlock(x, z){
     return(level[coords.z][coords.x]);
 }
 
+function getBlockCenter(x, z){
+    return {
+        x: levelWidthCoord - x * BLOCK_SIZE - BLOCK_SIZE/2,
+        z: levelHeightCoord - z * BLOCK_SIZE - BLOCK_SIZE/2
+    }
+}
+
 function getCoords(x, z){
     const coords = {}
 
@@ -565,28 +574,10 @@ function getCoords(x, z){
     return coords;
 }
 
-function animateGhosts(){
-    ghosts.forEach((ghost) => {
-        const ghostTail = sceneElements.sceneGraph.getObjectByName(ghost.name + "_tail");
-        ghostTail.traverse( (child) => {
-            if(child.position.y <= ghostTail.MIN_HEIGHT){
-                child.position.y = 0;
-                child.scale.set(1, 1, 1);
-            }
-            child.translateY((Math.random()*ghostTail.MAX_SPEED + ghostTail.MIN_SPEED) * delta * -1);
-            child.scale.addScalar(ghostTail.SCALE_DOWN_SPEED*delta);
-        })
-        ghost.position.y += ghost.BOB_SPEED * delta;
-        if(ghost.position.y <= ghost.BOB_MIN_HEIGHT){
-            ghost.BOB_SPEED *= -1;
-            ghost.position.y = ghost.BOB_MIN_HEIGHT;
-        }
-        else if(ghost.position.y >= ghost.BOB_MAX_HEIGHT){
-            ghost.BOB_SPEED *= -1;
-            ghost.position.y = ghost.BOB_MAX_HEIGHT;
-        }
-    })
-}
+
+// ************************** //
+// Animations
+// ************************** //
 
 function animatePacman(){
     const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
@@ -622,4 +613,282 @@ function animatePacman(){
         pacmanModel.bobSpeed *= -1;
         pacmanModel.position.y = pacmanModel.BOB_MAX_HEIGHT;
     }
+}
+
+function animateGhosts(){
+    ghosts.forEach((ghost) => {
+        const ghostTail = sceneElements.sceneGraph.getObjectByName(ghost.name + "_tail");
+        ghostTail.traverse( (child) => {
+            if(child.position.y <= ghostTail.MIN_HEIGHT){
+                child.position.y = 0;
+                child.scale.set(1, 1, 1);
+            }
+            child.translateY((Math.random()*ghostTail.MAX_SPEED + ghostTail.MIN_SPEED) * delta * -1);
+            child.scale.addScalar(ghostTail.SCALE_DOWN_SPEED*delta);
+        })
+        ghost.position.y += ghost.BOB_SPEED * delta;
+        if(ghost.position.y <= ghost.BOB_MIN_HEIGHT){
+            ghost.BOB_SPEED *= -1;
+            ghost.position.y = ghost.BOB_MIN_HEIGHT;
+        }
+        else if(ghost.position.y >= ghost.BOB_MAX_HEIGHT){
+            ghost.BOB_SPEED *= -1;
+            ghost.position.y = ghost.BOB_MAX_HEIGHT;
+        }
+    })
+}
+
+// ************************** //
+// Movements
+// ************************** //
+
+function movePacman(){
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    checkWalls(delta);
+    if (keyD && !wallCollision.right)
+        pacman.translateX(pacman.MOV_SPEED_X * delta);
+    if (keyW && !wallCollision.front)
+        pacman.translateZ(-pacman.MOV_SPEED_Z * delta);
+    if (keyA && !wallCollision.left)
+        pacman.translateX(-pacman.MOV_SPEED_X * delta);
+    if (keyS && !wallCollision.back)
+        pacman.translateZ(pacman.MOV_SPEED_Z * delta);
+    sceneElements.camera.lookAt(pacman.position);
+    checkBounds(delta);
+}
+
+
+function lerp (start, end, amount){
+    // Taken from https://codepen.io/ma77os/pen/OJPVrP
+    return (1-amount) * start + amount * end;
+}
+
+function moveGhosts(){
+    ghosts.forEach((ghost) => {
+        
+        /*
+
+        ghost.position.x = lerp(ghost.position.x, blockCenter.x, ghost.MOV_SPEED_X * delta);
+        ghost.position.z = lerp(ghost.position.z, blockCenter.z, ghost.MOV_SPEED_Z * delta);
+        ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
+                
+        // If alignining move to the center of the block and rotate
+        if(ghost.isAligning){
+            // Move to the center of the block
+            if(ghost.isAligningPosition){
+                console.log( ghost.currentBlock.x * BLOCK_SIZE);
+                console.log(levelWidthCoord);
+                const blockCenter = {
+                    x: levelWidthCoord - ghost.currentBlock.x * BLOCK_SIZE - BLOCK_SIZE/2,
+                    z: levelHeightCoord - ghost.currentBlock.z * BLOCK_SIZE - BLOCK_SIZE/2
+                }
+                console.log(ghost.position)
+                console.log(blockCenter)
+               
+                ghost.position.x = lerp(ghost.position.x, blockCenter.x, ghost.MOV_SPEED_X * delta);
+                ghost.position.z = lerp(ghost.position.z, blockCenter.z, ghost.MOV_SPEED_Z * delta);
+                if(ghost.position.x > blockCenter.x - POSITION_ERROR 
+                    && ghost.position.x < blockCenter.x + POSITION_ERROR
+                    && ghost.position.z > blockCenter.z - POSITION_ERROR 
+                    && ghost.position.z < blockCenter.z + POSITION_ERROR)
+                    ghost.isAligningPosition = false;
+            }
+
+            // Rotate to the desired angle
+            if(ghost.isAligningRotation){
+                ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
+                
+                if(ghost.rotation.y >= ghost.direction.rotationAngle 
+                    || ghost.rotation.y >= ghost.direction.rotationAngle - ROTATION_ERROR)
+                    ghost.isAligningRotation = false;
+            }            
+
+            if(!ghost.isAligningPosition && !ghost.isAligningRotation)
+                ghost.isAligning = false;
+            return;
+        }
+        */
+
+        if(ghost.path.length > 0){
+            var nextPath = ghost.path[0];
+
+            //ghost.position.x = lerp(ghost.position.x, nextPath.x, ghost.MOV_SPEED_X * delta);
+            //ghost.position.z = lerp(ghost.position.z, nextPath.z, ghost.MOV_SPEED_Z * delta);
+            
+            ghost.rotation.y = lerp(ghost.rotation.y, ghost.direction.rotationAngle, ghost.ROTATION_SPEED*delta);
+            
+            const currBlock = getCoords(ghost.position.x, ghost.position.z);
+            
+            if(ghost.position.x > nextPath.x - POSITION_ERROR 
+                && ghost.position.x < nextPath.x + POSITION_ERROR
+                && ghost.position.z > nextPath.z - POSITION_ERROR 
+                && ghost.position.z < nextPath.z + POSITION_ERROR){
+                
+                ghost.path.shift();
+                if(ghost.path.length > 0){
+                    nextPath = ghost.path[0];
+                    
+                    console.log(ghost.position);
+                    
+                    ghost.currentBlock = currBlock;
+                    
+                    const nextPathBlock = getCoords(nextPath.x, nextPath.z);
+                    
+                    const direction = MOVE_DIRECTIONS.find(
+                        (dir) => 
+                        dir.xBias == (currBlock.x - nextPathBlock.x) 
+                        && dir.zBias == (currBlock.z - nextPathBlock.z)
+                        );
+                        if(direction.movement !== ghost.direction.movement)
+                        ghost.direction = direction;
+                }
+            }
+            
+            if(ghost.path.length > 0){
+                ghost.position.x += (ghost.MOV_SPEED_X * ghost.direction.xBias * delta);
+                ghost.position.z += (ghost.MOV_SPEED_Z * ghost.direction.zBias * delta);
+            }
+            
+        }
+        // If the ghost is in a new block, get the next path instruction
+        
+
+        // If the ghost doesn't have a path to follow
+        if(ghost.path.length == 0){
+            if(ghost.PATH_FINDING == "SHORTEST"){
+                
+                const path = getShortestPathToPacman(ghost.position.x, ghost.position.z);
+                // Remove first element as it's not needed;
+                //path.shift(); 
+                ghost.path = path;
+
+            }else if(ghost.PATH_FINDING == "RANDOM"){
+                //const path = getRandomPath(ghost.position.x, ghost.position.z);
+                //ghost.path = path;
+            }
+        }
+
+        /*
+        // Verify if the direction is still the same
+        // If not, start aligning and define new direction
+        if(ghost.path.length > 0 ){
+            const nextPath = ghost.path[0];
+            // Get the direction
+            const direction = MOVE_DIRECTIONS.find(
+                (dir) => 
+                    dir.xBias == (currBlock.x - nextPath.x) 
+                    && dir.zBias == (currBlock.z - nextPath.z)
+                );
+            // Check if it's different
+            console.log(currBlock);
+            console.log(nextPath);
+
+            if(direction.movement !== ghost.direction.movement){
+                ghost.direction = direction;
+                ghost.isAligning = true;
+                ghost.isAligningPosition = true;
+                ghost.isAligningRotation = true;
+            }
+        }
+        if(ghost.path.length > 0 && !ghost.isAligning){
+            ghost.translateX(ghost.MOV_SPEED_X * ghost.direction.xBias * delta);
+            ghost.translateZ(ghost.MOV_SPEED_Z * ghost.direction.zBias * delta);
+        }
+
+        */
+    });
+}
+
+function getShortestPathToPacman(x, z){
+    // Adapted from
+    // https://medium.com/@manpreetsingh.16.11.87/shortest-path-in-a-2d-array-java-653921063884
+    
+    // Copy the map to a new variable (Shallow copy)
+    var map = [];
+    var line = [];
+    for(var i = 0; i < level.length; i++){
+        line = [];
+        for(var k = 0; k < level[0].length; k++){
+            line.push(level[i][k]);
+        }
+        map.push(line);
+    }
+
+    // Get position in the map
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    const pacmanPos = getCoords(pacman.position.x, pacman.position.z);
+    const ghostPos = getCoords(x, z);
+
+    // Create a queue with nodes
+    const sourceNode = {x: ghostPos.x, z: ghostPos.z, previous: null};
+    const queue = [sourceNode];
+    var popedNode, tries = 0;
+    
+    console.log("Finding path from [" + ghostPos.x + ", " + ghostPos.z + "] to [" + pacmanPos.x + ", " + pacmanPos.z + "]")
+    while(queue.length > 0){
+        tries++;
+        popedNode = queue.shift();
+
+        // Check if this Node represents the block pacman is in
+        if(popedNode.x == pacmanPos.x && popedNode.z == pacmanPos.z){
+            console.log("Found a path to Pacman after searching " + tries + " blocks.");
+            //printPath(generatePath(popedNode));
+            return generatePath(popedNode);
+        }
+        //console.log(popedNode)
+
+        // Mark as a wall because it's "unwakable"
+        map[popedNode.z][popedNode.x] = "#";
+
+        // Add adjacent nodes
+        if(popedNode.x > 0 && map[popedNode.z][popedNode.x-1] != "#")
+            queue.push({x: popedNode.x-1, z: popedNode.z, previous: popedNode});
+        if(popedNode.x + 1 < levelWidth && map[popedNode.z][popedNode.x+1] != "#")
+            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
+        if(popedNode.z > 0 && map[popedNode.z-1][popedNode.x] != "#")
+            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
+        if(popedNode.z + 1 < levelHeight && map[popedNode.z+1][popedNode.x] != "#")
+            queue.push({x: popedNode.x, z: popedNode.z+1, previous: popedNode});
+
+    }
+
+
+    console.log("Couldn't find a path to Pacman after searching " + tries + " blocks.");
+    return [];
+}
+
+function getRandomPath(x, z){
+
+}
+
+function generatePath(pathNode){
+    // Generates the path from a path node
+    const path = [];
+    path.push(getBlockCenter(pathNode.x,pathNode.z));
+    while(pathNode.previous){
+        path.push(getBlockCenter(pathNode.previous.x,pathNode.previous.z));
+        pathNode = pathNode.previous;
+    }
+    return path.reverse();
+}
+
+/*
+function generatePath(pathNode){
+    // Generates the path from a path node
+    const path = [];
+    path.push({x: pathNode.x, z: pathNode.z});
+    while(pathNode.previous){
+        path.push({x: pathNode.previous.x, z: pathNode.previous.z});
+        pathNode = pathNode.previous;
+    }
+
+    return path.reverse();
+}
+*/
+function printPath(path){
+    var pathString = "";
+    path.forEach((block) => {
+            pathString += "["+ block.x + ", " + block.z + "] => ";
+        });
+    console.log(pathString.substring(0, pathString.length -4));
 }

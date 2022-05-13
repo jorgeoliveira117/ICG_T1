@@ -710,7 +710,6 @@ function moveGhosts(){
         // If the ghost doesn't have a path to follow
         if(ghost.path.length == 0){
             if(ghost.isScared){
-                console.log("Scared ghost");
                 const path = getPathToCorner(ghost.position.x, ghost.position.z);
                 ghost.path = path;
             }
@@ -800,7 +799,6 @@ function getShortestPathTo(x, z, destX, destZ){
     
     // Copy the map to a new variable (Shallow copy)
     var map = getMapCopy();
-    
 
     // Get position in the map
     const destPos = getCoords(destX, destZ);
@@ -852,40 +850,96 @@ function getPathToCorner(x, z){
 
     var quarter = "";
     // Find which quarter of the map it is
-    if(z > levelHeight / 2)
-        quarter += "BOTTOM";
-    else    
+    if(z > levelHeightCoord / 2)
         quarter += "TOP";
-    if(x > levelWidth / 2)
-        quarter += "_RIGHT";
     else    
-        quarter += "_LEFT";    
+        quarter += "BOTTOM";
+    if(x > levelWidthCoord / 2)
+        quarter += "_LEFT";
+    else    
+        quarter += "_RIGHT";    
 
+    console.log(quarter);
+    var block;
     switch(quarter){
         case "TOP_RIGHT":
-            getClosestBlockTo(0, levelHeight-1);
+            block = getClosestBlockTo(0, levelHeight-1);
             break;
         case "TOP_LEFT":
-            getClosestBlockTo(0, 0);
+            block = getClosestBlockTo(0, 0);
             break;
         case "BOTTOM_RIGHT":
-            getClosestBlockTo(levelWidth-1,levelHeight-1);
+            block = getClosestBlockTo(levelWidth-1,levelHeight-1);
             break;
         case "BOTTOM_LEFT":
-            getClosestBlockTo(levelWidth-1,0);
+            block = getClosestBlockTo(levelWidth-1,0);
             break;
     }
 
-    var cornerX = 0;
-    var cornerZ = 0;
+    block = getBlockCenter(block.x, block.z);
 
-    return getShortestPathTo(x, z, cornerX, cornerZ);
+    return getShortestPathTo(x, z, block.x, block.z);
 }
 
 function getClosestBlockTo(x, z){
     // returns the closest walkable block to the coordinates
+    var map = getMapCopy();
+
+    if(map[z][x] != "#" && map[z][x] != "-")
+        return({x: x, z: z});
+
+    // Create a queue with nodes
+    const sourceNode = {x: x, z: z, previous: null};
+    const queue = [sourceNode];
+    var popedNode;
+    
+    while(queue.length > 0){
+        popedNode = queue.shift();
+
+        console.log(popedNode);
+
+        if(popedNode.x < 0 || popedNode.x >= levelWidth || popedNode.z < 0 || popedNode.z >= levelHeight)
+            continue;
+        if(map[popedNode.z][popedNode.x] != "#" && map[popedNode.z][popedNode.x] != "-")
+            return({x: popedNode.x, z: popedNode.z});
 
 
+        // Mark as a walked to not repeat blocks
+        map[popedNode.z][popedNode.x] = "X";
+
+        // TopLeft, TopRight, BottomLeft, BottomRight
+        if(popedNode.x > 0 && popedNode.z > 0 
+            && map[popedNode.z-1][popedNode.x-1] != "X")
+            queue.push({x: popedNode.x-1, z: popedNode.z-1, previous: popedNode});
+
+        if(popedNode.x + 1 < levelWidth && popedNode.z > 0 
+            && map[popedNode.z-1][popedNode.x+1] != "X")
+            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
+
+        if(popedNode.z + 1 < levelHeight && popedNode.x > 0
+            && map[popedNode.z+1][popedNode.x-1] != "X")
+            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
+
+        if(popedNode.z + 1 < levelHeight && popedNode.x + 1 < levelWidth
+            && map[popedNode.z+1][popedNode.x+1] != "X")
+            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
+        // Left, Right, Up, Down
+        if(popedNode.x > 0 && map[popedNode.z][popedNode.x-1] != "X")
+            queue.push({x: popedNode.x-1, z: popedNode.z, previous: popedNode});
+
+        if(popedNode.x + 1 < levelWidth && map[popedNode.z][popedNode.x+1] != "X")
+            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
+
+        if(popedNode.z > 0 && map[popedNode.z-1][popedNode.x] != "X")
+            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
+
+        if(popedNode.z + 1 < levelHeight && map[popedNode.z+1][popedNode.x] != "X")
+            queue.push({x: popedNode.x, z: popedNode.z+1, previous: popedNode});
+
+    }
+
+    console.log("Couldn't find a walkable block");
+    return [];
 }
 
 function generatePath(pathNode){

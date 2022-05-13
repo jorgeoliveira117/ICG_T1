@@ -132,6 +132,7 @@ const models = {
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
         pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
         pacmanGroup.WALL_COLLISION_RADIUS = 1;
+        pacmanGroup.lastPosition = new THREE.Vector3();
 
         camera.position.set(0, 5, 10);
         camera.lookAt(pacmanGroup.position);

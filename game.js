@@ -53,6 +53,11 @@ const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
 const ROTATION_ERROR = Math.PI/100;
 const POSITION_ERROR = 0.1;
 
+// Other values
+const PORTAL_COOLDOWN = 5000;
+var portalCooldown = 0;
+
+
 
 // Functions are called
 //  1. Initialize the level
@@ -560,10 +565,12 @@ function checkPacmanBounds(){
     if( pacman.position.x < 0 || pacman.position.x > levelWidthCoord
         || pacman.position.z < 0 || pacman.position.z > levelHeightCoord){
             // Set position to spawn
-            pacman.position.copy(pacmanSpawnPoint);
+            pacman.position.copy(pacman.lastPosition);
             return;
     }
-
+    pacman.lastPosition.copy(pacman.position);
+    if(Date.now() < portalCooldown)
+        return;
     // Check if block is a portal
     const block = getBlock(pacman.position.x, pacman.position.z);
     const pacmanBlock = getCoords(pacman.position.x, pacman.position.z);
@@ -575,7 +582,7 @@ function checkPacmanBounds(){
                 const portalCoords = getBlockCenter(portal.coordX, portal.coordZ);
                 pacman.position.x = portalCoords.x;
                 pacman.position.z = portalCoords.z;
-                pacman.position.y += 10;
+                portalCooldown = Date.now() + PORTAL_COOLDOWN;
             }
         })
     }

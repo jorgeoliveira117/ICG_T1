@@ -14,7 +14,7 @@ const helper = {
         // ************************** //
         const width = window.innerWidth;
         const height = window.innerHeight;
-        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 600);
         sceneElements.camera = camera;
         
         // *********************************** //
@@ -23,8 +23,11 @@ const helper = {
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         sceneElements.renderer = renderer;
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setClearColor('rgb(0, 100, 255)', 0.4);
+        renderer.setClearColor('rgb(0, 150, 255)', 0.4);
         renderer.setSize(width, height);
+        renderer.MIN_INTENSITY = 0.4;
+        renderer.MAX_INTENSITY = 0.6;
+        renderer.SPEED = 0.1;
 
         // Setup shadowMap property
         renderer.shadowMap.enabled = true;

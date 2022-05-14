@@ -64,8 +64,8 @@ const models = {
         const powerUp = new THREE.Mesh( powerUpGeometry, powerUpMaterial );
         powerUp.name = "powerup_" + n;
         powerUp.castShadow = true;
-        const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
-        powerUp.add( light );
+        //const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
+        //powerUp.add( light );
 
         return powerUp;
     },
@@ -132,6 +132,7 @@ const models = {
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
         pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
         pacmanGroup.WALL_COLLISION_RADIUS = 1;
+        pacmanGroup.RADIUS = 1;
         pacmanGroup.lastPosition = new THREE.Vector3();
 
         camera.position.set(0, 5, 10);
@@ -262,6 +263,7 @@ const models = {
             ghostRightEye.visible = false;
             ghostLeftEye.visible = false;
             ghostScaredFace.visible = true;
+            ghost.isScared = true;
         }
         
 
@@ -280,6 +282,7 @@ const models = {
             ghostRightEye.visible = true;
             ghostLeftEye.visible = true;
             ghostScaredFace.visible = false;
+            ghost.isScared = false;
         }
 
         ghost.setNotScared();
@@ -325,7 +328,8 @@ const models = {
     // ************************** //
     createGround: function(width, height){
         const groundGeometry = new THREE.PlaneGeometry(width, height);
-        const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x362f31, side: THREE.DoubleSide });
+        //const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x362f31, side: THREE.DoubleSide });
+        const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x251e20, side: THREE.DoubleSide });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         return ground;
     },

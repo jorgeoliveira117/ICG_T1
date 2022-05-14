@@ -14,8 +14,9 @@ const portals = [];
 const ghostHitboxes = [];
 const pointHitboxes = [];
 const powerUpHitboxes = [];
-const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-pacmanHitbox.name = "pacman_hitbox";
+const pacmanHitbox = new THREE.Sphere();
+//const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+//pacmanHitbox.name = "pacman_hitbox";
 //pacmanHitbox.setFromObject(ghost);
 
 // Game control properties
@@ -53,10 +54,20 @@ const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
 const ROTATION_ERROR = Math.PI/100;
 const POSITION_ERROR = 0.1;
 
-// Other values
+// Game values
+const PACMAN_SPEED_MODIFIER = 1;
+const GHOST_SPEED_MODIFIER = 1;
+
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
+const POWERUP_DURATION = 15 * 1000;
+const POWERUP_SPEED = 1.5;
+var powerUpLimit = 0;
+var poweredUp = false;
 
+
+var points = 0;
+var isAlive = true;
 
 
 // Functions are called
@@ -178,12 +189,16 @@ function loadLevel(levelName){
     // ************************** //
 
     // Ambient light
-    const ambientLight = new THREE.AmbientLight('rgb(255, 255, 255)', 0.2);
+    const ambientLight = new THREE.AmbientLight('rgb(255, 255, 255)', 0.6);
+    ambientLight.name = "ambientLight";
+    ambientLight.MAX_INTENSITY = 1;
+    ambientLight.MIN_INTENSITY = 0.6;
+    ambientLight.SPEED = 0.4;
     sceneElements.sceneGraph.add(ambientLight);
 
     // PointLight (with shadows)
-    const lightCenter = new THREE.PointLight('rgb(255, 255, 255)', 0.4, 1000);
-    lightCenter.position.set(levelWidthCoord / 2, 100, levelHeightCoord / 2);
+    const lightCenter = new THREE.PointLight('rgb(255, 255, 255)', 1, 1000);
+    lightCenter.position.set(levelWidthCoord / 2, 200, levelHeightCoord / 2);
     sceneElements.sceneGraph.add(lightCenter);
     lightCenter.name = "light_center";
 
@@ -199,6 +214,7 @@ function loadLevel(levelName){
     */ 
 
     // Other lights
+    /*
     const lightBR = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
     lightBR.position.set(0, 100, 0);
     sceneElements.sceneGraph.add(lightBR);
@@ -218,7 +234,7 @@ function loadLevel(levelName){
     lightTL.position.set(levelWidthCoord, 100, levelHeightCoord);
     sceneElements.sceneGraph.add(lightTL);
     lightTL.name = "light_topleft";
-
+    */
 
     // ************************** //
     // Generate Map
@@ -251,9 +267,8 @@ function loadLevel(levelName){
                     sceneElements.sceneGraph.add(point);
                     point.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     // Hitbox
-                    const pointHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+                    const pointHitbox = new THREE.Sphere(point.position, 0.25);
                     pointHitbox.name = point.name + "_hitbox";
-                    pointHitbox.setFromObject(point);
                     pointHitboxes.push(pointHitbox);
                     break;
                 case "o":
@@ -263,9 +278,8 @@ function loadLevel(levelName){
                     powerUp.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     sceneElements.sceneGraph.add(powerUp);
                     // Hitbox
-                    const powerUpHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+                    const powerUpHitbox = new THREE.Sphere(powerUp.position, 0.25);
                     powerUpHitbox.name = powerUp.name + "_hitbox";
-                    powerUpHitbox.setFromObject(powerUp);
                     powerUpHitboxes.push(powerUpHitbox);
                     break;
                 case "P":
@@ -295,15 +309,15 @@ function loadLevel(levelName){
     // Create Pacman
     // ************************** //
     const pacman = models.createPacman(sceneElements.camera);
-
-    // Hitbox
-    const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    pacmanHitbox.name = "pacman_hitbox";
-    pacmanHitbox.setFromObject(pacman);
-
     pacman.translateY(1.5);
     pacman.position.copy(pacmanSpawnPoint);
     sceneElements.sceneGraph.add(pacman);
+
+    // Hitbox
+    //pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    //pacmanHitbox.setFromObject(pacman);
+
+    pacmanHitbox.set(pacman.position, pacman.RADIUS);
     
     
     //pacman.rotation.x = -Math.PI/2;
@@ -320,7 +334,7 @@ function loadLevel(levelName){
         //ghost.position.copy(pacmanSpawnPoint);
 
         ghost.position.copy(ghostSpawnPoint);
-        //ghost.translateX(2*ghostN);
+        ghost.translateX(0.2);
 
         ghost.currentBlock = getCoords(ghost.position.x, ghost.position.z);
         //ghost.rotateY(-Math.PI/2);
@@ -382,7 +396,7 @@ function handleMouseMove(e) {
     var deltaX = e.clientX - mouseX;
     mouseX = e.clientX;
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -406,9 +420,6 @@ const wallCollision = {front: false, left: false, right: false, back: false}
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
-    
-    
-    
 
     movePacman();
     checkPacmanBounds();
@@ -420,7 +431,7 @@ function computeFrame(time) {
     // ************************** //
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/
-    
+    /*
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
@@ -442,13 +453,14 @@ function computeFrame(time) {
             sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
         else
             sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
-    }/*
+    }
     */
 
     checkCollisions();
     animatePacman();
     animateGhosts();
     animatePortals();
+    checkPowerUp();
 
     // Rendering
     helper.render(sceneElements);
@@ -459,16 +471,14 @@ function computeFrame(time) {
     // Call for the next frame
     requestAnimationFrame(computeFrame);
 }
-
+var time = 0;
 function checkCollisions(){
 
     // Update Pacman's Hitbox
-    const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacmanModel");
-    pacmanHitbox.setFromObject(pacmanModel);
-    pacmanModel.geometry.computeBoundingSphere();
-    pacmanModel.geometry.boundingSphere.getBoundingBox(pacmanHitbox)
-    pacmanHitbox.applyMatrix4(pacmanModel.matrixWorld);
-    
+    const pacmanModel = sceneElements.sceneGraph.getObjectByName("pacman");
+
+    pacmanHitbox.center = pacmanModel.position;
+
     // Update ghost hitboxes and check collision
     ghostHitboxes.forEach((ghostHitbox) => {
         const ghostName = ghostHitbox.name.substring(0, ghostHitbox.name.length - 7);
@@ -476,33 +486,124 @@ function checkCollisions(){
         const ghostBody = sceneElements.sceneGraph.getObjectByName(ghostName + "_body");
         ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
-            console.log("Collided with " + ghostName);
+            if(ghost.isScared){
+                ghost.position.copy(ghostSpawnPoint);
+                ghost.path = [];
+                ghost.setNotScared();
+            }else{
+                if(isAlive){
+                    isAlive = false;
+                    console.log(ghostName + " hit Pacman");
+                }
+            }
             // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
+            // ghostHitboxes.pop(ghostHitbox);
         }
     });
 
+    var i = 0;
     // Check for collision with points
-    pointHitboxes.forEach((pointHitbox) =>{
-        const pointName = pointHitbox.name.substring(0, pointHitbox.name.length - 7);
-        if(pacmanHitbox.intersectsBox(pointHitbox)){
-            console.log("Collided with " + pointName);
-            // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
+    for(i = 0; i < pointHitboxes.length; i++){
+        if(pacmanHitbox.intersectsSphere(pointHitboxes[i])){
+            const pointName = pointHitboxes[i].name.substring(0, pointHitboxes[i].name.length - 7);
+            const point = sceneElements.sceneGraph.getObjectByName(pointName);
+            sceneElements.sceneGraph.remove(point);
+            pointHitboxes.splice(i,1);
+            addPoints(10);
+            return;
         }
-    });
-
-    // Check for collision with power ups
-    powerUpHitboxes.forEach((powerUpHitbox) =>{
-        const powerUpName = powerUpHitbox.name.substring(0, powerUpHitbox.name.length - 7);
-        if(pacmanHitbox.intersectsBox(powerUpHitbox)){
-            console.log("Collided with " + powerUpName);
-            // remover hitbox
-            //ghostHitboxes.pop(ghostHitbox);
+    }
+    // Check for collision with points
+    for(i = 0; i < powerUpHitboxes.length; i++){
+        if(pacmanHitbox.intersectsSphere(powerUpHitboxes[i])){
+            const powerUpName = powerUpHitboxes[i].name.substring(0, powerUpHitboxes[i].name.length - 7);
+            const powerUp = sceneElements.sceneGraph.getObjectByName(powerUpName);
+            sceneElements.sceneGraph.remove(powerUp);
+            powerUpHitboxes.splice(i,1);
+            addPoints(200);
+            activatePowerUp();
+            return;
         }
-    });
+    }
 }
 
+function addPoints(n){
+    points += n;
+    console.log("Points: " + points);
+}
+
+function activatePowerUp(){
+
+    poweredUp = true;
+    
+    sceneElements.renderer.setClearColor('rgb(100, 255, 200)', 0.4);
+    
+    // Increase Pacman's speed
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    pacman.MOV_SPEED_X *= POWERUP_SPEED;
+    pacman.MOV_SPEED_Z *= POWERUP_SPEED;
+    
+    ghosts.forEach((ghost) => {
+        ghost.setScared();
+        const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+        const path = getBlockCenter(mapCoords.x, mapCoords.z)
+        ghost.path = [path];
+    })
+    
+    powerUpLimit = Date.now() + POWERUP_DURATION;
+// IMPLEMENT
+// IMPLEMENT
+// IMPLEMENT
+// IMPLEMENT
+// IMPLEMENT
+// IMPLEMENT
+}
+
+function checkPowerUp(){
+    if(!poweredUp)
+        return;
+
+    const ambientLight = sceneElements.sceneGraph.getObjectByName("ambientLight");
+    if(Date.now() > powerUpLimit){
+        poweredUp = false;
+
+        // Decrease Pacman's speed
+        const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+        pacman.MOV_SPEED_X /= POWERUP_SPEED;
+        pacman.MOV_SPEED_Z /= POWERUP_SPEED;
+
+        // Reset Lights
+        sceneElements.renderer.setClearColor('rgb(0, 150, 255)', 0.4);
+        ambientLight.intensity = ambientLight.MIN_INTENSITY;
+
+        ghosts.forEach((ghost) => {
+            if(ghost.isScared)
+                ghost.setNotScared();
+            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+            const path = getBlockCenter(mapCoords.x, mapCoords.z)
+            ghost.path = [path];
+        })
+        return;
+    }
+    // Animate ambient light
+    ambientLight.intensity += ambientLight.SPEED * delta;
+    if(ambientLight.intensity >= ambientLight.MAX_INTENSITY){
+        ambientLight.intensity = ambientLight.MAX_INTENSITY;
+        ambientLight.SPEED *= -1;
+    }else if (ambientLight.intensity <= ambientLight.MIN_INTENSITY){
+        ambientLight.intensity = ambientLight.MIN_INTENSITY;
+        ambientLight.SPEED *= -1;
+    }
+    // Animate renderer color
+    sceneElements.renderer.setClearAlpha(sceneElements.renderer.getClearAlpha() + sceneElements.renderer.SPEED * delta);
+    if(sceneElements.renderer.getClearAlpha() >= sceneElements.renderer.MAX_INTENSITY){
+        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MAX_INTENSITY);
+        sceneElements.renderer.SPEED *= -1;
+    }else if (sceneElements.renderer.getClearAlpha() <= sceneElements.renderer.MIN_INTENSITY){
+        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MIN_INTENSITY);
+        sceneElements.renderer.SPEED *= -1;
+    }
+}
 
 function checkWalls(){
     // Check if Pacman is next to a wall 
@@ -1011,7 +1112,6 @@ function getPathToCorner(x, z){
     else    
         quarter += "_RIGHT";    
 
-    console.log(quarter);
     var block;
     switch(quarter){
         case "TOP_RIGHT":
@@ -1048,7 +1148,6 @@ function getClosestBlockTo(x, z){
     while(queue.length > 0){
         popedNode = queue.shift();
 
-        console.log(popedNode);
 
         if(popedNode.x < 0 || popedNode.x >= levelWidth || popedNode.z < 0 || popedNode.z >= levelHeight)
             continue;

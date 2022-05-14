@@ -42,7 +42,9 @@ const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
 const level = [];
 var portalsN = 0;
+
 const lightSources = [];
+const LIGHT_CHECK_DELAY = 200;
 var nextLightCheck = 0;
 var closestLightName = "";
 
@@ -469,8 +471,11 @@ function checkCollisions(){
                     // Ghost died
                     ghost.setDead();
                     // Create Path to spawn point
-                    ghost.path = getShortestPathTo(ghost.position.x, ghost.position.z, ghostSpawnPoint.x, ghostSpawnPoint.z);
-                    console.log(ghost.path);
+                    const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+                    const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
+                    ghost.position.x = blockCenter.x;
+                    ghost.position.z = blockCenter.z;
+                    ghost.path = [];
                 }else{
                     if(isAlive){
                         isAlive = false;
@@ -498,6 +503,7 @@ function checkCollisions(){
         if(pacmanHitbox.intersectsSphere(powerUpHitboxes[i])){
             const powerUpName = powerUpHitboxes[i].name.substring(0, powerUpHitboxes[i].name.length - 7);
             const powerUp = sceneElements.sceneGraph.getObjectByName(powerUpName);
+            powerUp.turnLightOff();
             sceneElements.sceneGraph.remove(powerUp);
             powerUpHitboxes.splice(i,1);
             // Remove power up from light sources
@@ -518,7 +524,7 @@ function checkLights(){
     if(Date.now() < nextLightCheck)
         return; 
     
-    nextLightCheck = Date.now() + 200;
+    nextLightCheck = Date.now() + LIGHT_CHECK_DELAY;
 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
 
@@ -556,23 +562,28 @@ function addPoints(n){
 }
 
 function activatePowerUp(){
-
-    poweredUp = true;
-    
     sceneElements.renderer.setClearColor('rgb(100, 255, 200)', 0.4);
-    
+
+    // Make ghosts scared
+    ghosts.forEach((ghost) => {
+        ghost.setScared();
+        const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+        const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
+        ghost.position.x = blockCenter.x;
+        ghost.position.z = blockCenter.z;
+        ghost.path = [];
+    })
+
+    if(poweredUp){
+        powerUpLimit += POWERUP_DURATION;
+        return;
+    }
+    poweredUp = true;
     // Increase Pacman's speed
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     pacman.MOV_SPEED_X *= POWERUP_SPEED;
     pacman.MOV_SPEED_Z *= POWERUP_SPEED;
-    
-    ghosts.forEach((ghost) => {
-        ghost.setScared();
-        const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-        const path = getBlockCenter(mapCoords.x, mapCoords.z)
-        ghost.path = [path];
-    })
-    
+
     powerUpLimit = Date.now() + POWERUP_DURATION;
 }
 
@@ -979,12 +990,18 @@ function moveGhosts(){
                 ghost.position.x += (ghost.MOV_SPEED_X * ghost.direction.xBias * delta);
                 ghost.position.z += (ghost.MOV_SPEED_Z * ghost.direction.zBias * delta);
             }
-            
         }
         // If the ghost doesn't have a path to follow
         if(ghost.path.length == 0){
             if(ghost.isDead){
-                ghost.setAlive();
+                // Check if ghost is on its respawn block
+                const currBlock = getBlock(ghost.position.x, ghost.position.z);
+                if(currBlock == "G")
+                    ghost.setAlive();   
+                else{
+                    ghost.path = getShortestPathTo(ghost.position.x, ghost.position.z, ghostSpawnPoint.x, ghostSpawnPoint.z);
+                    return;
+                }
             }
             if(ghost.isScared){
                 const path = getPathToCorner(ghost.position.x, ghost.position.z);
@@ -1001,7 +1018,6 @@ function moveGhosts(){
                 }
             }
         }
-
     });
 }
 
@@ -1123,7 +1139,7 @@ function getShortestPathTo(x, z, destX, destZ){
 
     }
 
-    //console.log("Couldn't find a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
+    console.log("Couldn't find a path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
     return [];
 }
 
@@ -1177,16 +1193,14 @@ function getClosestBlockTo(x, z){
     while(queue.length > 0){
         popedNode = queue.shift();
 
-
         if(popedNode.x < 0 || popedNode.x >= levelWidth || popedNode.z < 0 || popedNode.z >= levelHeight)
             continue;
-        if(map[popedNode.z][popedNode.x] != "#" && map[popedNode.z][popedNode.x] != "-")
+        if(map[popedNode.z][popedNode.x] != "#" && map[popedNode.z][popedNode.x] != "-" && map[popedNode.z][popedNode.x] != "X"){
             return({x: popedNode.x, z: popedNode.z});
-
+        }
 
         // Mark as a walked to not repeat blocks
         map[popedNode.z][popedNode.x] = "X";
-
         // TopLeft, TopRight, BottomLeft, BottomRight
         if(popedNode.x > 0 && popedNode.z > 0 
             && map[popedNode.z-1][popedNode.x-1] != "X")

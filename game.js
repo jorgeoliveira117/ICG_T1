@@ -22,11 +22,11 @@ const pacmanHitbox = new THREE.Sphere();
 // Game control properties
 var gameIsReady = false;
 const ghosts = [];
-const GHOST_COLORS = [
-    [0xF80404,0xA30404],
-    [0xF8ACF4,0xA3ACF4],
-    [0x08F8F4,0x059997],
-    [0xFF8E00,0xA65D02]
+const GHOST_PROPERTIES = [
+    {primary: 0xF80404, secondary: 0xA30404, speed: 1.1},
+    {primary: 0xF8ACF4, secondary: 0xA3ACF4, speed: 1.0},
+    {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95},
+    {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9}
 ]
 
 // Map properties
@@ -59,8 +59,8 @@ const ROTATION_ERROR = Math.PI/100;
 const POSITION_ERROR = 0.1;
 
 // Game values
-const PACMAN_SPEED_MODIFIER = 1;
-const GHOST_SPEED_MODIFIER = 1;
+const PACMAN_SPEED_MODIFIER = 0.1;
+const GHOST_SPEED_MODIFIER = 0.1;
 
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
@@ -71,10 +71,18 @@ const POWERUP_SPEED = 2.5;
 var powerUpLimit = 0;
 var poweredUp = false;
 
-
+var levelN = 1;
+var ghostKills = 0;
 var points = 0;
 var isAlive = true;
+var totalGhostKills = 0;
+var totalPoints = 0;
+var lives = 3;
 
+var gamePaused = true;
+var gameOver = false;
+var DEATH_TIMER = 5000;
+var deathTimer = 0;
 
 // Functions are called
 //  1. Initialize the level
@@ -290,6 +298,8 @@ function loadLevel(levelName){
     const pacman = models.createPacman(sceneElements.camera);
     pacman.translateY(1.5);
     pacman.position.copy(pacmanSpawnPoint);
+    pacman.MOV_SPEED_X *= (1 + levelN * GHOST_SPEED_MODIFIER);
+    pacman.MOV_SPEED_Z *= (1 + levelN * GHOST_SPEED_MODIFIER);
     sceneElements.sceneGraph.add(pacman);
 
     // Hitbox
@@ -305,8 +315,10 @@ function loadLevel(levelName){
     // ************************** //
     // Create Ghosts
     // ************************** //
-    GHOST_COLORS.forEach(ghostColor => {
-        const ghost = models.createGhost(ghostN, ghostColor[0], ghostColor[1]);
+    GHOST_PROPERTIES.forEach(g => {
+        const ghost = models.createGhost(ghostN, g.primary, g.secondary);
+        ghost.MOV_SPEED_X *= g.speed * (1 + levelN * GHOST_SPEED_MODIFIER);
+        ghost.MOV_SPEED_Z *= g.speed * (1 + levelN * GHOST_SPEED_MODIFIER);
         ghostN++;
         sceneElements.sceneGraph.add(ghost);
         
@@ -330,8 +342,16 @@ function loadLevel(levelName){
 
     });
 
-    gameIsReady = true;
+    poweredUp = false;
+    levelN++;
+    ghostKills = 0;
+    points = 0;
+    isAlive = true;
 
+    lives = 3;
+
+    gameIsReady = true;
+    gamePaused = false;
 }
 
 
@@ -375,7 +395,7 @@ function handleMouseMove(e) {
     var deltaX = e.clientX - mouseX;
     mouseX = e.clientX;
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -400,48 +420,28 @@ function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
 
-    movePacman();
-    checkPacmanBounds();
-    checkLights();
+    if(!isAlive && Date.now() > deathTimer)
+        respawn();
 
-    moveGhosts();
+    if(gameIsReady && !gamePaused){
+        movePacman();
+        checkPacmanBounds();
+        checkLights();
+        moveGhosts();
+        checkCollisions();
+        animatePacman();
+        animateGhosts();
+        animatePortals();
+        checkPowerUp();
 
-
-    // ************************** //
-    // Camera
-    // ************************** //
-    // Adapted from
-    // https://sbcode.net/threejs/raycaster2/
-    /*
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    sceneElements.camera.getWorldPosition(cameraWorldPos);
-    dir.subVectors(cameraWorldPos, pacman.position).normalize();
-    raycaster.set(pacman.position, dir);
-    intersects = raycaster.intersectObjects(wallMeshes, false);
-    if (intersects.length > 0) {
-        if (intersects[0].distance < pacman.CAMERA_DISTANCE) {
-            sceneElements.sceneGraph.attach(sceneElements.camera);
-            sceneElements.camera.position.copy(intersects[0].point);
-            pacman.attach(sceneElements.camera);
-        }else{
-            if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
-                sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
-            else
-                sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
-        }
-    }else{
-        if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
-            sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
-        else
-            sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
+        moveCamera();
+        // Adapted from
+        // https://sbcode.net/threejs/raycaster2/
+        /*
+        
+        */
+        
     }
-    */
-
-    checkCollisions();
-    animatePacman();
-    animateGhosts();
-    animatePortals();
-    checkPowerUp();
 
     // Rendering
     helper.render(sceneElements);
@@ -451,6 +451,15 @@ function computeFrame(time) {
 
     // Call for the next frame
     requestAnimationFrame(computeFrame);
+}
+
+function respawn(){
+
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    isAlive = true;
+    gamePaused = false;
+
+    pacman.position.copy(pacmanSpawnPoint);
 }
 function checkCollisions(){
 
@@ -468,6 +477,9 @@ function checkCollisions(){
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
             if(!ghost.isDead){
                 if(ghost.isScared){
+                    // Increase score
+                    ghostKills++;
+                    addPoints(ghostKills*200);
                     // Ghost died
                     ghost.setDead();
                     // Create Path to spawn point
@@ -478,8 +490,19 @@ function checkCollisions(){
                     ghost.path = [];
                 }else{
                     if(isAlive){
+                        // Pacman died
                         isAlive = false;
+                        lives --;
                         console.log(ghostName + " hit Pacman");
+                        console.log("Lives: " + lives);
+                        ghosts.forEach((ghost) => {
+                            ghost.position.copy(ghostSpawnPoint);
+                        });
+                        gamePaused = true;
+                        if( lives <= 0)
+                            gameOver = true;
+                        
+                        deathTimer = Date.now() + DEATH_TIMER;
                     }
                 }
             }
@@ -513,7 +536,7 @@ function checkCollisions(){
                     break;
                 }
             }
-            addPoints(200);
+            addPoints(50);
             activatePowerUp();
             return;
         }
@@ -809,6 +832,7 @@ function animateGhosts(){
         }
     })
 }
+
 const directions = [
     {name: "_down",  x: 0,    z: -1},
     {name: "_up",    x: 0,    z: 1},
@@ -1019,6 +1043,31 @@ function moveGhosts(){
             }
         }
     });
+}
+
+function moveCamera(){
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    sceneElements.camera.getWorldPosition(cameraWorldPos);
+    dir.subVectors(cameraWorldPos, pacman.position).normalize();
+    raycaster.set(pacman.position, dir);
+    intersects = raycaster.intersectObjects(wallMeshes, false);
+    if (intersects.length > 0) {
+        if (intersects[0].distance < pacman.CAMERA_DISTANCE) {
+            sceneElements.sceneGraph.attach(sceneElements.camera);
+            sceneElements.camera.position.copy(intersects[0].point);
+            pacman.attach(sceneElements.camera);
+        }else{
+            if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
+                sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
+            else
+                sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
+        }
+    }else{
+        if(pacman.position.distanceTo(cameraWorldPos) > pacman.CAMERA_DISTANCE)
+            sceneElements.camera.position.copy(pacman.CAMERA_DEFAULT_POS);
+        else
+            sceneElements.camera.position.copy(sceneElements.camera.position.clone().addScaledVector(pacman.CAMERA_DIRECTION, pacman.CAMERA_SPEED * delta));
+    }
 }
 
 // ************************** //

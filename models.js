@@ -214,7 +214,7 @@ const models = {
     
         // Normal Eyes
         const ghostEyesMaterial = new THREE.MeshBasicMaterial( { color: 0xFFFFFF } );
-        const ghostEyeRetinaMaterial = new THREE.MeshPhongMaterial( { color: 0x000000 } );
+        const ghostEyeRetinaMaterial = new THREE.MeshPhongMaterial( { color: 0x0000FF } );
     
         const ghostLeftEye = new THREE.Group();
         ghostLeftEye.name = ghost.name + "_lefteye";

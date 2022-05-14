@@ -64,9 +64,16 @@ const models = {
         const powerUp = new THREE.Mesh( powerUpGeometry, powerUpMaterial );
         powerUp.name = "powerup_" + n;
         powerUp.castShadow = true;
-        //const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
-        //powerUp.add( light );
-
+        const light = new THREE.PointLight( 0xFFFF00, 2, 10 );
+        powerUp.add( light );
+        // Not scared properties
+        powerUp.turnLightOn = function() {
+            light.visible = true;
+        }
+        powerUp.turnLightOff = function() {
+            light.visible = false;
+        }
+        powerUp.turnLightOff();
         return powerUp;
     },
     // ************************** //
@@ -373,7 +380,17 @@ const models = {
         portal.name = "portal_" + n;
 
         const light = new THREE.PointLight( 0xDAA0EB, 5, 20 );
+
         portal.add( light );
+
+        portal.turnLightOn = function() {
+            light.visible = true;
+        }
+        portal.turnLightOff = function() {
+            light.visible = false;
+        }
+        portal.turnLightOff();
+
 
         const portalRingGeometry = new THREE.RingGeometry( 2*size/5, size/3, 32 );
         const portalRingAlmostGeometry = new THREE.RingGeometry( size/5, size/4, 32, 1, 0, 3*Math.PI/4 );

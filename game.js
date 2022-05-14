@@ -42,7 +42,9 @@ const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
 const level = [];
 var portalsN = 0;
-
+const lightSources = [];
+var nextLightCheck = 0;
+var closestLightName = "";
 
 // Movement properties
 const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
@@ -208,36 +210,7 @@ function loadLevel(levelName){
     lightCenter.castShadow = true;
     lightCenter.shadow.mapSize.width = 2048;
     lightCenter.shadow.mapSize.height = 2048;
-    /*
-    const lightSphereGeometry = new THREE.SphereGeometry( 2, 16, 8 );
-    const lightSphereMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-    const lightCenterMesh = new THREE.Mesh( lightSphereGeometry, lightSphereMaterial );
-    lightCenter.add(lightCenterMesh);
-    */ 
-
-    // Other lights
-    /*
-    const lightBR = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
-    lightBR.position.set(0, 100, 0);
-    sceneElements.sceneGraph.add(lightBR);
-    lightBR.name = "light_bottomright";
-
-    const lightBL = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
-    lightBL.position.set(levelWidthCoord, 100, 0);
-    sceneElements.sceneGraph.add(lightBL);
-    lightBL.name = "light_bottomleft";
-
-    const lightTR = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
-    lightTR.position.set(0, 100, levelHeightCoord);
-    sceneElements.sceneGraph.add(lightTR);
-    lightTR.name = "light_topright";
-
-    const lightTL = new THREE.PointLight('rgb(255, 255, 255)', 0.2, 1000);
-    lightTL.position.set(levelWidthCoord, 100, levelHeightCoord);
-    sceneElements.sceneGraph.add(lightTL);
-    lightTL.name = "light_topleft";
-    */
-
+ 
     // ************************** //
     // Generate Map
     // ************************** //
@@ -283,6 +256,7 @@ function loadLevel(levelName){
                     const powerUpHitbox = new THREE.Sphere(powerUp.position, 0.25);
                     powerUpHitbox.name = powerUp.name + "_hitbox";
                     powerUpHitboxes.push(powerUpHitbox);
+                    lightSources.push({light: powerUp, position: powerUp.position});
                     break;
                 case "P":
                     // Pacman Spawn
@@ -303,6 +277,7 @@ function loadLevel(levelName){
                     portalsN++;
                     portal.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 2, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     sceneElements.sceneGraph.add(portal);
+                    lightSources.push({light: portal, position: portal.position});
                     break;
             }
         }
@@ -425,6 +400,8 @@ function computeFrame(time) {
 
     movePacman();
     checkPacmanBounds();
+    checkLights();
+
     moveGhosts();
 
 
@@ -516,18 +493,61 @@ function checkCollisions(){
             return;
         }
     }
-    // Check for collision with points
+    // Check for collision with power ups
     for(i = 0; i < powerUpHitboxes.length; i++){
         if(pacmanHitbox.intersectsSphere(powerUpHitboxes[i])){
             const powerUpName = powerUpHitboxes[i].name.substring(0, powerUpHitboxes[i].name.length - 7);
             const powerUp = sceneElements.sceneGraph.getObjectByName(powerUpName);
             sceneElements.sceneGraph.remove(powerUp);
             powerUpHitboxes.splice(i,1);
+            // Remove power up from light sources
+            for(var k = 0; k < lightSources.length; k++){
+                if(lightSources[k].light.name == powerUpName){
+                    lightSources.splice(k,1);
+                    break;
+                }
+            }
             addPoints(200);
             activatePowerUp();
             return;
         }
     }
+}
+
+function checkLights(){
+    if(Date.now() < nextLightCheck)
+        return; 
+    
+    nextLightCheck = Date.now() + 200;
+
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+
+    // Find closest element with a light source
+    var minDistance = Number.MAX_VALUE;
+    var distance;
+    var closestLight;
+
+    lightSources.forEach((source) => {
+        distance = pacman.position.distanceTo(source.light.position);
+        if(distance < minDistance){
+            closestLight = source;
+            minDistance = distance;
+        }
+    });
+
+    // If the closest light is still the same then don't do anything
+    if(closestLightName == closestLight.light.name)
+        return;
+    closestLightName = closestLight.light.name;
+
+    // Turn off all lights
+    lightSources.forEach((source) => {
+        source.light.turnLightOff();
+    });
+    // Turn on closest light
+    closestLight.light.turnLightOn();
+
+    // All lights are turned off to guarantee that there are a maximum of 3 lights on at time
 }
 
 function addPoints(n){
@@ -685,6 +705,10 @@ function checkPacmanBounds(){
         })
     }
 }
+
+// ************************** //
+// Coordinates / Blocks
+// ************************** //
 
 function getBlock(x, z){
     // Inspired from
@@ -980,6 +1004,11 @@ function moveGhosts(){
 
     });
 }
+
+// ************************** //
+// Path Finding
+// ************************** //
+
 
 function findAdjacentBlocks(x, z){
     const options = [];

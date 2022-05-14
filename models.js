@@ -250,6 +250,8 @@ const models = {
         ghostScaredFace.add(ghostMouth);
         ghost.add(ghostScaredFace);
     
+        const ghostBall = new THREE.Mesh( ghostScaredEyesGeometry, ghostScaredEyesMaterial );
+        ghost.add(ghostBall);
         // Scared properties 
         ghost.setScared = function() {
             ghostBody.material = ghostScaredMaterial;
@@ -265,10 +267,7 @@ const models = {
             ghostScaredFace.visible = true;
             ghost.isScared = true;
         }
-        
-
-
-    
+       
         // Not scared properties
         ghost.setNotScared = function() {
             ghostBody.material = ghostMaterial;
@@ -284,6 +283,34 @@ const models = {
             ghostScaredFace.visible = false;
             ghost.isScared = false;
         }
+
+        // Not scared properties
+        ghost.setDead = function() {
+            ghostBody.visible = false;
+            ghostHead.visible = false;
+            ghostTail.visible = false;
+            ghostSkirt.visible = false;
+            ghostRightEye.visible = false;
+            ghostLeftEye.visible = false;
+            ghostScaredFace.visible = false;
+            ghost.isDead = true;
+        }
+
+        // Not scared properties
+        ghost.setAlive = function() {
+            ghostBody.visible = true;
+            ghostHead.visible = true;
+            ghostTail.visible = true;
+            ghostSkirt.visible = true;
+            ghostRightEye.visible = true;
+            ghostLeftEye.visible = true;
+            ghostScaredFace.visible = true;
+            ghost.isDead = false;
+            ghost.setNotScared();
+        }
+
+
+
 
         ghost.setNotScared();
     
@@ -308,6 +335,7 @@ const models = {
         ghost.isAligningPosition = false;
         ghost.isAligningRotation = false;
         ghost.isScared = false;
+        ghost.isDead = false;
         return ghost;
     },
 

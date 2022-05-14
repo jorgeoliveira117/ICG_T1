@@ -60,8 +60,10 @@ const GHOST_SPEED_MODIFIER = 1;
 
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
-const POWERUP_DURATION = 15 * 1000;
-const POWERUP_SPEED = 1.5;
+//const POWERUP_DURATION = 15 * 1000;
+const POWERUP_DURATION = 30 * 1000;
+//const POWERUP_SPEED = 1.5;
+const POWERUP_SPEED = 2.5;
 var powerUpLimit = 0;
 var poweredUp = false;
 
@@ -471,7 +473,6 @@ function computeFrame(time) {
     // Call for the next frame
     requestAnimationFrame(computeFrame);
 }
-var time = 0;
 function checkCollisions(){
 
     // Update Pacman's Hitbox
@@ -486,18 +487,20 @@ function checkCollisions(){
         const ghostBody = sceneElements.sceneGraph.getObjectByName(ghostName + "_body");
         ghostHitbox.copy(ghostBody.geometry.boundingBox).applyMatrix4(ghostBody.matrixWorld);
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
-            if(ghost.isScared){
-                ghost.position.copy(ghostSpawnPoint);
-                ghost.path = [];
-                ghost.setNotScared();
-            }else{
-                if(isAlive){
-                    isAlive = false;
-                    console.log(ghostName + " hit Pacman");
+            if(!ghost.isDead){
+                if(ghost.isScared){
+                    // Ghost died
+                    ghost.setDead();
+                    // Create Path to spawn point
+                    ghost.path = getShortestPathTo(ghost.position.x, ghost.position.z, ghostSpawnPoint.x, ghostSpawnPoint.z);
+                    console.log(ghost.path);
+                }else{
+                    if(isAlive){
+                        isAlive = false;
+                        console.log(ghostName + " hit Pacman");
+                    }
                 }
             }
-            // remover hitbox
-            // ghostHitboxes.pop(ghostHitbox);
         }
     });
 
@@ -551,12 +554,6 @@ function activatePowerUp(){
     })
     
     powerUpLimit = Date.now() + POWERUP_DURATION;
-// IMPLEMENT
-// IMPLEMENT
-// IMPLEMENT
-// IMPLEMENT
-// IMPLEMENT
-// IMPLEMENT
 }
 
 function checkPowerUp(){
@@ -962,6 +959,9 @@ function moveGhosts(){
         }
         // If the ghost doesn't have a path to follow
         if(ghost.path.length == 0){
+            if(ghost.isDead){
+                ghost.setAlive();
+            }
             if(ghost.isScared){
                 const path = getPathToCorner(ghost.position.x, ghost.position.z);
                 ghost.path = path;
@@ -1066,7 +1066,7 @@ function getShortestPathTo(x, z, destX, destZ){
     const queue = [sourceNode];
     var popedNode, tries = 0;
     
-    console.log("Finding path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "]")
+    //console.log("Finding path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "]")
     while(queue.length > 0){
         tries++;
         popedNode = queue.shift();
@@ -1094,7 +1094,7 @@ function getShortestPathTo(x, z, destX, destZ){
 
     }
 
-    console.log("Couldn't find a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
+    //console.log("Couldn't find a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
     return [];
 }
 

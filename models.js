@@ -257,8 +257,8 @@ const models = {
         ghostScaredFace.add(ghostMouth);
         ghost.add(ghostScaredFace);
     
-        const ghostBall = new THREE.Mesh( ghostScaredEyesGeometry, ghostScaredEyesMaterial );
-        ghost.add(ghostBall);
+        //const ghostBall = new THREE.Mesh( ghostScaredEyesGeometry, ghostScaredEyesMaterial );
+        //ghost.add(ghostBall);
         // Scared properties 
         ghost.setScared = function() {
             ghostBody.material = ghostScaredMaterial;
@@ -299,7 +299,7 @@ const models = {
             ghostSkirt.visible = false;
             ghostRightEye.visible = false;
             ghostLeftEye.visible = false;
-            ghostScaredFace.visible = false;
+            ghostMouth.visible = false;
             ghost.isDead = true;
         }
 
@@ -312,6 +312,7 @@ const models = {
             ghostRightEye.visible = true;
             ghostLeftEye.visible = true;
             ghostScaredFace.visible = true;
+            ghostMouth.visible = true;
             ghost.isDead = false;
             ghost.setNotScared();
         }

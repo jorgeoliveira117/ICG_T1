@@ -2,6 +2,7 @@
 // Path Finding
 // ************************** //
 
+// This module requires game.js
 
 function findAdjacentBlocks(x, z){
     const options = [];

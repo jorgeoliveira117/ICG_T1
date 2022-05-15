@@ -21,6 +21,8 @@
 	<script type="text/javascript" src="helper.js" defer></script>
 	<script type="text/javascript" src="models.js" defer></script>
 	<script type="text/javascript" src="levels.js" defer></script>
+	<script type="text/javascript" src="game-pathfind.js" defer></script>
+
 	<script type="text/javascript" src="game.js" defer></script>
 	
 </head>
@@ -34,7 +36,7 @@
 		<div class="menu" id="pause-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
-					<h3> Game Paused</h3>
+					<h3>Game Paused</h3>
 				</div>
 				<hr>
 				<div class="d-grid gap-4">
@@ -47,7 +49,7 @@
 		<div class="menu" id="start-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
-					<h3> Starting Game</h3>
+					<h3>Starting Game</h3>
 				</div>
 				<hr>
 				<div class="d-grid gap-4">
@@ -69,6 +71,20 @@
 				</div>
 			</div>
 			<br>
+		</div>
+		<div class="menu" id="game-over" style="visibility: hidden;">
+			<div class="container" style="padding-top: 5%">
+				<div class="row" style="text-align: center;"> 
+					<h3>Game Over</h3>
+				</div>
+				<hr>
+				<div class="d-grid gap-4">
+					<button id="leave-game-3" type="button" class="btn btn-lg btn-outline-danger">Leave Game</button>
+					<button id="restart-game" type="button" class="btn btn-lg btn-outline-success">Restart Game</button>
+				</div>
+				<hr>
+				<p id="game-over-points" style="font-size: 80%; text-align: center;">You finished with 0 points!</p>
+			</div>
 		</div>
 	</div>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>

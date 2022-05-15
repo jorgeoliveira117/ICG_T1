@@ -21,6 +21,7 @@ const pacmanHitbox = new THREE.Sphere();
 
 // Game control properties
 var gameIsReady = false;
+var gameIsOver = false;
 const ghosts = [];
 const GHOST_PROPERTIES = [
     {primary: 0xF80404, secondary: 0xA30404, speed: 1.1},
@@ -41,7 +42,7 @@ var levelHeightCoord = 0;
 const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
 const level = [];
-var portalsN = 0;
+var totalPortals = 0;
 
 const lightSources = [];
 const LIGHT_CHECK_DELAY = 200;
@@ -65,9 +66,9 @@ const GHOST_SPEED_MODIFIER = 0.1;
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
 //const POWERUP_DURATION = 15 * 1000;
-const POWERUP_DURATION = 30 * 1000;
+const POWERUP_DURATION = 15 * 1000;
 //const POWERUP_SPEED = 1.5;
-const POWERUP_SPEED = 2.5;
+const POWERUP_SPEED = 1.5;
 var powerUpLimit = 0;
 var poweredUp = false;
 
@@ -82,7 +83,6 @@ var lives = 3;
 
 var gameTimer = 0;
 var gamePaused = true;
-var gameOver = false;
 var DEATH_TIMER = 5000;
 var deathTimer = 0;
 
@@ -90,6 +90,7 @@ var deathTimer = 0;
 // Functions are called
 //  1. Initialize the level
 //  2. Animate
+helper.initEmptyScene(sceneElements);
 
 loadLevel("level_1");
 //load3DObjects(sceneElements.sceneGraph);
@@ -104,8 +105,10 @@ window.addEventListener('resize', resizeWindow);
 
 document.getElementById("start-game").onclick = startGame;
 document.getElementById("continue-game").onclick = continueGame;
+document.getElementById("restart-game").onclick = restartGame;
 document.getElementById("leave-game").onclick = leaveGame;
 document.getElementById("leave-game-2").onclick = leaveGame;
+document.getElementById("leave-game-3").onclick = leaveGame;
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false;
 var mouseDown = false, mouseUp = true;
@@ -178,7 +181,6 @@ function onMouseUp(){
 
 
 function loadLevel(levelName){
-    helper.initEmptyScene(sceneElements);
 
     levelMapName = levelName;
     gameIsReady = false;
@@ -248,6 +250,8 @@ function loadLevel(levelName){
     var pointN = 0;
     var powerUpN = 0;
     var ghostN = 0;
+    var portalsN = 0;
+
     for(line = 0; line < level.length; line++){
         for(char = 0; char < level[0].length; char++){
             switch(level[line][char]){
@@ -361,6 +365,9 @@ function loadLevel(levelName){
 
     });
 
+    totalPortals = portalsN;
+
+
     poweredUp = false;
     ghostKills = 0;
     points = 0;
@@ -368,11 +375,12 @@ function loadLevel(levelName){
     document.getElementById("start-menu").style.visibility = "visible";
     document.getElementById("start-menu-difficulty").innerHTML = "Difficulty: " + levelN;
 
-    lives = 3;
+    lives = 0;
     //levelN++;
 
     gameTimer = 0;
     gameIsReady = true;
+    gameIsOver = false;
     gamePaused = true;
 }
 
@@ -443,11 +451,12 @@ let dir = new THREE.Vector3();
 let intersects = [];
 const wallCollision = {front: false, left: false, right: false, back: false}
 
+// Call vital game functions and update HUD
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
 
-    if(!isAlive){
+    if(!isAlive && !gameIsOver){
         document.getElementById("dead-timer").innerHTML = "Respawning in " + (Math.floor((deathTimer - Date.now())/1000) + 1) + "..."  ;
         if(deathTimer < Date.now())
             respawn();
@@ -480,17 +489,7 @@ function computeFrame(time) {
     requestAnimationFrame(computeFrame);
 }
 
-function respawn(){
 
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    isAlive = true;
-    gamePaused = false;
-
-    pacman.position.copy(pacmanSpawnPoint);
-
-    document.getElementById("dead-menu").style.visibility = "hidden";
-
-}
 function checkCollisions(){
 
     // Update Pacman's Hitbox
@@ -520,29 +519,9 @@ function checkCollisions(){
                     ghost.path = [];
                 }else{
                     if(isAlive){
-                        
                         // Pacman died
-
-                        powerUpLimit = 0;
-                        isAlive = false;
-                        lives --;
                         console.log(ghostName + " hit Pacman");
-                        console.log("Lives: " + lives);
-                        ghosts.forEach((ghost) => {
-                            ghost.position.copy(ghostSpawnPoint);
-                        });
-
-                        gamePaused = true;
-                        if( lives <= 0){
-                            gameOver = true;
-
-                        }
-                        document.getElementById("dead-menu").style.visibility = "visible";
-                        document.getElementById("lives").innerHTML = "Lives: " + lives;
-                        if(lives == 0)
-                            document.getElementById("lives").style.color = "red";
-                        deathTimer = Date.now() + DEATH_TIMER;
-                        
+                        killPacman();                  
                     }
                 }
             }
@@ -583,75 +562,13 @@ function checkCollisions(){
     }
 }
 
-function checkLights(){
-    if(Date.now() < nextLightCheck)
-        return; 
-    
-    nextLightCheck = Date.now() + LIGHT_CHECK_DELAY;
 
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
 
-    // Find closest element with a light source
-    var minDistance = Number.MAX_VALUE;
-    var distance;
-    var closestLight;
 
-    lightSources.forEach((source) => {
-        distance = pacman.position.distanceTo(source.light.position);
-        if(distance < minDistance){
-            closestLight = source;
-            minDistance = distance;
-        }
-    });
 
-    // If the closest light is still the same then don't do anything
-    if(closestLightName == closestLight.light.name)
-        return;
-    closestLightName = closestLight.light.name;
-
-    // Turn off all lights
-    lightSources.forEach((source) => {
-        source.light.turnLightOff();
-    });
-    // Turn on closest light
-    closestLight.light.turnLightOn();
-
-    // All lights are turned off to guarantee that there are a maximum of 3 lights on at time
-}
-
-function addPoints(n){
-    points += n;
-    document.getElementById("score").innerHTML = "Points: " + points;
-    console.log("Points: " + points);
-}
-
-function activatePowerUp(){
-    sceneElements.renderer.setClearColor('rgb(100, 255, 200)', 0.4);
-
-    // Make ghosts scared
-    ghosts.forEach((ghost) => {
-        if(!ghost.isDead){
-            ghost.setScared();
-            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-            const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
-            ghost.position.x = blockCenter.x;
-            ghost.position.z = blockCenter.z;
-            ghost.path = [];
-        }
-    })
-
-    if(poweredUp){
-        powerUpLimit += POWERUP_DURATION;
-        return;
-    }
-    poweredUp = true;
-    // Increase Pacman's speed
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    pacman.MOV_SPEED_X *= POWERUP_SPEED;
-    pacman.MOV_SPEED_Z *= POWERUP_SPEED;
-
-    powerUpLimit = Date.now() + POWERUP_DURATION;
-}
+// ************************** //
+// Colisions and Bounds
+// ************************** //
 
 function checkPowerUp(){
     if(!poweredUp)
@@ -891,13 +808,12 @@ const directions = [
 ];
 function animatePortals(){
     
-    for(var i = 0; i < portalsN; i++){
+    for(var i = 0; i < totalPortals; i++){
         directions.forEach((dir) => {
             const portalOuterRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_1");
             const portalThirdRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_2");
             const portalQuarterRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_3");
             const portalSexthRing = sceneElements.sceneGraph.getObjectByName("portal_" + i + dir.name + "_ring_4");
-            
             portalOuterRing.position.z += portalOuterRing.BOB_SPEED * dir.z * delta;
             portalOuterRing.position.x += portalOuterRing.BOB_SPEED * dir.x * delta;
             portalOuterRing.rotation.z += portalOuterRing.ROTATION_SPEED * dir.z * delta;
@@ -993,6 +909,42 @@ function animatePortals(){
         });
 
     }
+}
+
+function checkLights(){
+    if(Date.now() < nextLightCheck)
+        return; 
+    
+    nextLightCheck = Date.now() + LIGHT_CHECK_DELAY;
+
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+
+    // Find closest element with a light source
+    var minDistance = Number.MAX_VALUE;
+    var distance;
+    var closestLight;
+
+    lightSources.forEach((source) => {
+        distance = pacman.position.distanceTo(source.light.position);
+        if(distance < minDistance){
+            closestLight = source;
+            minDistance = distance;
+        }
+    });
+
+    // If the closest light is still the same then don't do anything
+    if(closestLightName == closestLight.light.name)
+        return;
+    closestLightName = closestLight.light.name;
+
+    // Turn off all lights
+    lightSources.forEach((source) => {
+        source.light.turnLightOff();
+    });
+    // Turn on closest light
+    closestLight.light.turnLightOn();
+
+    // All lights are turned off to guarantee that there are a maximum of 3 lights on at time
 }
 
 // ************************** //
@@ -1122,243 +1074,92 @@ function moveCamera(){
     }
 }
 
+
+
 // ************************** //
-// Path Finding
+// Game Events
 // ************************** //
 
-
-function findAdjacentBlocks(x, z){
-    const options = [];
-    // Check adjacent nodes
-    if(x > 0 && level[z][x-1] != "#")
-        options.push({x: -1, z: 0, name: "LEFT"});
-    if(x + 1 < levelWidth && level[z][x+1] != "#")
-        options.push({x: 1, z: 0, name: "RIGHT"});
-    if(z > 0 && level[z-1][x] != "#")
-        options.push({x: 0, z: -1, name: "DOWN"});
-    if(z + 1 < levelHeight && level[z+1][x] != "#")
-        options.push({x: 0, z: 1, name: "UP"});
-
-    return options;
-}
-
-function getRandomPath(x, z){
-
-    const ghostPos = getCoords(x, z);
-    const options = findAdjacentBlocks(ghostPos.x, ghostPos.z);
-    const choice = options[Math.floor(Math.random() * options.length)];
-    const coords = {x: ghostPos.x + choice.x, z: ghostPos.z + choice.z};
-    const path = [ {x: ghostPos.x, z: ghostPos.z}, {x: coords.x, z: coords.z}];
-    var findingPath = true;
-
-    // Find a path until next wall
-    while(findingPath){
-        if(
-            coords.x + choice.x >= 0 && coords.x + choice.x < levelWidth && 
-            coords.z + choice.z >= 0 && coords.z + choice.z < levelHeight &&
-            level[coords.z + choice.z][coords.x + choice.x] != "#"
-        ){
-            coords.x += choice.x;
-            coords.z += choice.z;
-            path.push({x: coords.x, z: coords.z});
-        }else{
-            findingPath = false;
-        }
+function killPacman(){
+    powerUpLimit = 0;
+    isAlive = false;
+    gamePaused = true;
+    if(lives <= 0){
+        gameOver();
+        return;
     }
 
-    const pathCoords = [];
-    pathCoords.push(getBlockCenter(path[0].x, path[0].z));
-    // Shorten the path to the next intersection
-    for(var i = 1; i < path.length; i++){
-        const adjacentBlocks = findAdjacentBlocks(path[i].x, path[i].z);
-        pathCoords.push(getBlockCenter(path[i].x, path[i].z));
-        if(adjacentBlocks.length > 2){
-            break
-        }
-    }
-    return pathCoords;
+    lives --;
+    console.log("Lives: " + lives);
+    ghosts.forEach((ghost) => {
+        ghost.position.copy(ghostSpawnPoint);
+    });
+
+    document.getElementById("dead-menu").style.visibility = "visible";
+    document.getElementById("lives").innerHTML = "Lives: " + lives;
+    if(lives == 0)
+        document.getElementById("lives").style.color = "red";
+    deathTimer = Date.now() + DEATH_TIMER;
 }
 
-function getMapCopy(){
-    var map = [];
-    var line = [];
-    for(var i = 0; i < level.length; i++){
-        line = [];
-        for(var k = 0; k < level[0].length; k++){
-            line.push(level[i][k]);
-        }
-        map.push(line);
-    }
-    return map;
+function gameOver(){
+    gameIsOver = true;
+    document.getElementById("game-over").style.visibility = "visible";
+    document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
 }
 
-function getShortestPathTo(x, z, destX, destZ){
-    // Adapted from
-    // https://medium.com/@manpreetsingh.16.11.87/shortest-path-in-a-2d-array-java-653921063884
+function killGhost(ghost){
     
-    // Copy the map to a new variable (Shallow copy)
-    var map = getMapCopy();
+}
 
-    // Get position in the map
-    const destPos = getCoords(destX, destZ);
-    const ghostPos = getCoords(x, z);
+function respawn(){
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    isAlive = true;
+    gamePaused = false;
+    pacman.position.copy(pacmanSpawnPoint);
+    document.getElementById("dead-menu").style.visibility = "hidden";
+}
 
-    if(ghostPos.x == destPos.x && ghostPos.z == destPos.z){
-        return [getBlockCenter(ghostPos.x,ghostPos.z)];
-    }
+function addPoints(n){
+    points += n;
+    document.getElementById("score").innerHTML = "Points: " + points;
+    console.log("Points: " + points);
+}
 
-    // Create a queue with nodes
-    const sourceNode = {x: ghostPos.x, z: ghostPos.z, previous: null};
-    const queue = [sourceNode];
-    var popedNode, tries = 0;
-    
-    //console.log("Finding path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "]")
-    while(queue.length > 0){
-        tries++;
-        popedNode = queue.shift();
+function activatePowerUp(){
+    sceneElements.renderer.setClearColor('rgb(100, 255, 200)', 0.4);
 
-        // Check if this Node represents the block pacman is in
-        if(popedNode.x == destPos.x && popedNode.z == destPos.z){
-            console.log("Found a path to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
-            //printPath(generatePath(popedNode));
-            return generatePath(popedNode);
+    // Make ghosts scared
+    ghosts.forEach((ghost) => {
+        if(!ghost.isDead){
+            ghost.setScared();
+            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+            const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
+            ghost.position.x = blockCenter.x;
+            ghost.position.z = blockCenter.z;
+            ghost.path = [];
         }
-        //console.log(popedNode)
+    })
 
-        // Mark as a wall because it's "unwakable"
-        map[popedNode.z][popedNode.x] = "#";
-
-        // Add adjacent nodes
-        if(popedNode.x > 0 && map[popedNode.z][popedNode.x-1] != "#")
-            queue.push({x: popedNode.x-1, z: popedNode.z, previous: popedNode});
-        if(popedNode.x + 1 < levelWidth && map[popedNode.z][popedNode.x+1] != "#")
-            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
-        if(popedNode.z > 0 && map[popedNode.z-1][popedNode.x] != "#")
-            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
-        if(popedNode.z + 1 < levelHeight && map[popedNode.z+1][popedNode.x] != "#")
-            queue.push({x: popedNode.x, z: popedNode.z+1, previous: popedNode});
-
+    if(poweredUp){
+        powerUpLimit += POWERUP_DURATION;
+        return;
     }
+    poweredUp = true;
+    // Increase Pacman's speed
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    pacman.MOV_SPEED_X *= POWERUP_SPEED;
+    pacman.MOV_SPEED_Z *= POWERUP_SPEED;
 
-    console.log("Couldn't find a path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
-    return [];
+    powerUpLimit = Date.now() + POWERUP_DURATION;
 }
 
-function getPathToCorner(x, z){
-    // Finds shortest path to the closest corner
-
-    var quarter = "";
-    // Find which quarter of the map it is
-    if(z > levelHeightCoord / 2)
-        quarter += "TOP";
-    else    
-        quarter += "BOTTOM";
-    if(x > levelWidthCoord / 2)
-        quarter += "_LEFT";
-    else    
-        quarter += "_RIGHT";    
-
-    var block;
-    switch(quarter){
-        case "TOP_RIGHT":
-            block = getClosestBlockTo(0, levelHeight-1);
-            break;
-        case "TOP_LEFT":
-            block = getClosestBlockTo(0, 0);
-            break;
-        case "BOTTOM_RIGHT":
-            block = getClosestBlockTo(levelWidth-1,levelHeight-1);
-            break;
-        case "BOTTOM_LEFT":
-            block = getClosestBlockTo(levelWidth-1,0);
-            break;
-    }
-
-    block = getBlockCenter(block.x, block.z);
-
-    return getShortestPathTo(x, z, block.x, block.z);
-}
-
-function getClosestBlockTo(x, z){
-    // returns the closest walkable block to the coordinates
-    var map = getMapCopy();
-
-    if(map[z][x] != "#" && map[z][x] != "-")
-        return({x: x, z: z});
-
-    // Create a queue with nodes
-    const sourceNode = {x: x, z: z, previous: null};
-    const queue = [sourceNode];
-    var popedNode;
-    
-    while(queue.length > 0){
-        popedNode = queue.shift();
-
-        if(popedNode.x < 0 || popedNode.x >= levelWidth || popedNode.z < 0 || popedNode.z >= levelHeight)
-            continue;
-        if(map[popedNode.z][popedNode.x] != "#" && map[popedNode.z][popedNode.x] != "-" && map[popedNode.z][popedNode.x] != "X"){
-            return({x: popedNode.x, z: popedNode.z});
-        }
-
-        // Mark as a walked to not repeat blocks
-        map[popedNode.z][popedNode.x] = "X";
-        // TopLeft, TopRight, BottomLeft, BottomRight
-        if(popedNode.x > 0 && popedNode.z > 0 
-            && map[popedNode.z-1][popedNode.x-1] != "X")
-            queue.push({x: popedNode.x-1, z: popedNode.z-1, previous: popedNode});
-
-        if(popedNode.x + 1 < levelWidth && popedNode.z > 0 
-            && map[popedNode.z-1][popedNode.x+1] != "X")
-            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
-
-        if(popedNode.z + 1 < levelHeight && popedNode.x > 0
-            && map[popedNode.z+1][popedNode.x-1] != "X")
-            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
-
-        if(popedNode.z + 1 < levelHeight && popedNode.x + 1 < levelWidth
-            && map[popedNode.z+1][popedNode.x+1] != "X")
-            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
-        // Left, Right, Up, Down
-        if(popedNode.x > 0 && map[popedNode.z][popedNode.x-1] != "X")
-            queue.push({x: popedNode.x-1, z: popedNode.z, previous: popedNode});
-
-        if(popedNode.x + 1 < levelWidth && map[popedNode.z][popedNode.x+1] != "X")
-            queue.push({x: popedNode.x+1, z: popedNode.z, previous: popedNode});
-
-        if(popedNode.z > 0 && map[popedNode.z-1][popedNode.x] != "X")
-            queue.push({x: popedNode.x, z: popedNode.z-1, previous: popedNode});
-
-        if(popedNode.z + 1 < levelHeight && map[popedNode.z+1][popedNode.x] != "X")
-            queue.push({x: popedNode.x, z: popedNode.z+1, previous: popedNode});
-
-    }
-
-    console.log("Couldn't find a walkable block");
-    return [];
-}
-
-function generatePath(pathNode){
-    // Generates the path from a path node
-    const path = [];
-    path.push(getBlockCenter(pathNode.x,pathNode.z));
-    while(pathNode.previous){
-        path.push(getBlockCenter(pathNode.previous.x,pathNode.previous.z));
-        pathNode = pathNode.previous;
-    }
-    return path.reverse();
-}
-
-function printPath(path){
-    var pathString = "";
-    path.forEach((block) => {
-            pathString += "["+ block.x + ", " + block.z + "] => ";
-        });
-    console.log(pathString.substring(0, pathString.length -4));
-}
-
-function lerp (start, end, amount){
-    // Taken from https://codepen.io/ma77os/pen/OJPVrP
-    return (1-amount) * start + amount * end;
+function clearGame(){
+    // Removes models and hitboxes
+    sceneElements.sceneGraph.clear();
+    ghostHitboxes.splice(0, ghostHitboxes.length);
+    pointHitboxes.splice(0, pointHitboxes.length);
+    powerUpHitboxes.splice(0, powerUpHitboxes.length);
 }
 
 // ************************** //
@@ -1377,6 +1178,10 @@ function startGame(){
     gamePaused = false;
 }
 
+function nextLevel(){
+
+}
+
 function pauseGame(){
     if(!isAlive)
         return;
@@ -1386,10 +1191,15 @@ function pauseGame(){
 }
 
 function restartGame(){
-    // Implement
-    // Implement
-    // Implement
     console.log("Restarting game");
+
+    clearGame();
+
+    document.getElementById("game-over").style.visibility = "hidden";
+    document.getElementById("score").innerHTML = "";
+    document.getElementById("timer").innerHTML = "";
+    document.getElementById("lives").innerHTML = "";
+    loadLevel(levelMapName);
 }
 
 function continueGame(){

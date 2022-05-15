@@ -6,6 +6,7 @@ const sceneElements = {
     camera: null,
     control: null,  // NEW
     renderer: null,
+    miniCamera: null
 };
 
 // Hitboxes in the game
@@ -91,8 +92,6 @@ var deathTimer = 0;
 //  1. Initialize the level
 //  2. Animate
 helper.initEmptyScene(sceneElements);
-
-loadLevel("level_1");
 //load3DObjects(sceneElements.sceneGraph);
 requestAnimationFrame(computeFrame);
 
@@ -111,8 +110,13 @@ document.getElementById("leave-game").onclick = leaveGame;
 document.getElementById("leave-game-2").onclick = leaveGame;
 document.getElementById("leave-game-3").onclick = leaveGame;
 document.getElementById("leave-game-4").onclick = leaveGame;
+
+
+document.getElementById("load-level").onclick = loadGameLevel;
+
+
 //To keep track of the keyboard - WASD
-var keyD = false, keyA = false, keyS = false, keyW = false;
+var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
 var mouseDown = false, mouseUp = true;
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
@@ -145,6 +149,12 @@ function onDocumentKeyDown(event) {
         case 87: //w
             keyW = true;
             break;
+        case 37: // left arrow
+            arrowLeft = true;
+            break;
+        case 39: // right arrow
+            arrowRight = true;
+            break;
     }
 }
 function onDocumentKeyUp(event) {
@@ -160,6 +170,12 @@ function onDocumentKeyUp(event) {
             break;
         case 87: //w
             keyW = false;
+            break;
+        case 37: // left arrow
+            arrowLeft = false;
+            break;
+        case 39: // right arrow
+            arrowRight = false;
             break;
     }
 }
@@ -256,7 +272,6 @@ function loadLevel(levelName){
     var powerUpN = 0;
     var ghostN = 0;
     var portalsN = 0;
-    console.log(pointHitboxes.length);
     for(line = 0; line < level.length; line++){
         for(char = 0; char < level[0].length; char++){
             switch(level[line][char]){
@@ -319,7 +334,14 @@ function loadLevel(levelName){
             }
         }
     }
-    console.log(pointHitboxes.length);
+    // ************************** //
+    // Minimap Camera
+    // ************************** //
+    sceneElements.miniCamera = new THREE.OrthographicCamera(- levelWidthCoord / 2, levelWidthCoord / 2, levelHeightCoord / 2, - levelHeightCoord / 2, 1, 20 );
+    sceneElements.miniCamera.position.set(levelWidthCoord / 2, 10, levelHeightCoord / 2);
+    sceneElements.miniCamera.lookAt(levelWidthCoord / 2, 0, levelHeightCoord / 2);
+    sceneElements.miniCamera.rotation.z += Math.PI;
+    sceneElements.miniCamera.mapAspectRatio = levelWidthCoord/levelHeightCoord;
     // ************************** //
     // Create Pacman
     // ************************** //
@@ -668,10 +690,29 @@ function continueGame(){
 }
 
 function leaveGame(){
-    // Implement
-    // Implement
-    // Implement
-    // sceneElements.sceneGraph.clear();
-    // marcar como hidden as outras janelas e vars do jogo = ""
     console.log("Leaving game");
+    clearGame();
+    document.getElementById("win-menu").style.visibility = "hidden";
+    document.getElementById("game-over").style.visibility = "hidden";
+    document.getElementById("pause-menu").style.visibility = "hidden";
+    document.getElementById("score").innerHTML = "";
+    document.getElementById("timer").innerHTML = "";
+    document.getElementById("lives").innerHTML = "";
+    document.getElementById("main-menu").style.visibility = "visible";
+}
+
+function loadGameLevel(){
+    const baseName = "map-";
+    document.getElementById("main-menu").style.visibility = "hidden";
+    for(var i = 1; i <= levels.howManyLevels(); i++){
+        if(document.getElementById(baseName + i).classList.contains("active")){
+            loadLevel(levels.getLevelNameByNum(i));
+            break;
+        }
+    }
+    
+}
+
+function openGameModelsMenu(){
+    
 }

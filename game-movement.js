@@ -4,6 +4,8 @@
 
 // This module requires game.js
 
+const verticalAxis = new THREE.Vector3(0, 1, 0);
+
 function movePacman(){
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     checkWalls(delta);
@@ -15,6 +17,12 @@ function movePacman(){
         pacman.translateX(-pacman.MOV_SPEED_X * delta);
     if (keyS && !wallCollision.back)
         pacman.translateZ(pacman.MOV_SPEED_Z * delta);
+
+    if (arrowLeft && !wallCollision.back)
+        pacman.rotateOnAxis(verticalAxis, delta * pacman.ROTATION_SPEED);
+    if (arrowRight && !wallCollision.back)
+        pacman.rotateOnAxis(verticalAxis, - delta * pacman.ROTATION_SPEED);
+
     sceneElements.camera.lookAt(pacman.position);
     checkWallBounds(delta);
 }

@@ -33,10 +33,14 @@
 
 <body>
 	<div id="Tag3DScene"> 
+
+		<!-- Game Stats -->
 		<h2 id="timer" class="timer"></h2>
 		<h2 id="score" class="score"></h2>
 		<h2 id="lives" class="lives"></h2>
 		<h2 id="powerup" class="powerup"></h2>
+
+		<!-- Pause Menu -->
 		<div class="menu" id="pause-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
@@ -50,6 +54,8 @@
 			</div>
 			<br>
 		</div>
+
+		<!-- Start Menu -->
 		<div class="menu" id="start-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
@@ -64,6 +70,8 @@
 				<p id="start-menu-difficulty" style="font-size: 80%; text-align: center;"> Difficulty: 1</p>
 			</div>
 		</div>
+
+		<!-- Death Menu -->
 		<div class="menu" id="dead-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
@@ -76,6 +84,8 @@
 			</div>
 			<br>
 		</div>
+
+		<!-- Game Over Menu -->
 		<div class="menu" id="game-over" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
@@ -90,6 +100,8 @@
 				<p id="game-over-points" style="font-size: 80%; text-align: center;">You finished with 0 points!</p>
 			</div>
 		</div>
+
+		<!-- Win Menu -->
 		<div class="menu" id="win-menu" style="visibility: hidden;">
 			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
@@ -98,7 +110,53 @@
 				<hr>
 				<div class="d-grid gap-4">
 					<button id="leave-game-4" type="button" class="btn btn-lg btn-outline-danger">Leave Game</button>
-					<button id="next-game" type="button" class="btn btn-lg btn-outline-success">Next Level</button>
+					<button id="next-game" type="button" class="btn btn-lg btn-outline-success">Next Difficulty</button>
+				</div>
+			</div>
+			<br>
+		</div>
+
+		<!-- Main Menu -->
+
+		<div class="main-menu" id="main-menu" style="visibility: visible;">
+			
+			<div class="container" style="padding-top: 5%">
+				<div class="row" style="text-align: center;"> 
+					<h3>Pacman 3D</h3>
+				</div>
+				<hr>
+				<div id="carouselExampleCaptions" class="carousel slide" data-interval="false">
+					<div class="carousel-indicators">
+					  <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+					  <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
+					</div>
+					<div class="carousel-inner">
+					  <div id="map-1" class="carousel-item active"  style="max-height: 20%;">
+						<img src="imgs/Map1.png" class="d-block w-100 map-img" alt="Classic Map">
+						<div class="carousel-caption d-none d-md-block">
+						  <h5>Classic</h5>
+						</div>
+					  </div>
+					  <div id="map-2" class="carousel-item">
+						<img src="imgs/Map2.png" class="d-block w-100 map-img" alt="Google Map">
+						<div class="carousel-caption d-none d-md-block">
+						  <h5>Google</h5>
+						</div>
+					  </div>
+					</div>
+					<button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
+					  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+					  <span class="visually-hidden">Previous</span>
+					</button>
+					<button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
+					  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+					  <span class="visually-hidden">Next</span>
+					</button>
+				  </div>
+				<br>
+				<div class="d-grid gap-4">
+					<button id="load-level" type="button" class="btn btn-lg btn-outline-success">Start Game</button>
+					<button id="continue-game" type="button" class="btn btn-lg btn-outline-info">Game Models</button>
 				</div>
 			</div>
 			<br>

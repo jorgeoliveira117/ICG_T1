@@ -136,6 +136,7 @@ const models = {
         pacmanGroup.CAMERA_SPEED = 5;
         pacmanGroup.MOV_SPEED_X = 10;
         pacmanGroup.MOV_SPEED_Z = 10;
+        pacmanGroup.ROTATION_SPEED = Math.PI/2;
         pacmanGroup.WALL_COLLISION_RADIUS_FRONT = 1;
         pacmanGroup.WALL_COLLISION_RADIUS_SIDE = 1;
         pacmanGroup.WALL_COLLISION_RADIUS = 1;

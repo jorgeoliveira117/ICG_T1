@@ -8,7 +8,12 @@
 
 	<title> Pacman 3D </title>
 
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
 	<link rel="stylesheet" href="style.css">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&family=VT323&display=swap" rel="stylesheet">
 
 	<script type="text/javascript" src="lib/three.js" defer></script>
 	<script type="text/javascript" src="lib/OrbitControls.js" defer></script>
@@ -17,10 +22,53 @@
 	<script type="text/javascript" src="models.js" defer></script>
 	<script type="text/javascript" src="levels.js" defer></script>
 	<script type="text/javascript" src="game.js" defer></script>
+	
 </head>
 
 <body>
-	<div id="Tag3DScene"> </div>
+	<div id="Tag3DScene"> 
+		<h2 id="timer" class="timer"></h2>
+		<h2 id="score" class="score"></h2>
+		<h2 id="lives" class="lives"></h2>
+		<div class="menu" id="pause-menu" style="visibility: hidden;">
+			<div class="container" style="padding-top: 5%">
+				<div class="row" style="text-align: center;"> 
+					<h3> Game Paused</h3>
+				</div>
+				<hr>
+				<div class="d-grid gap-4">
+					<button id="leave-game" type="button" class="btn btn-lg btn-outline-danger">Leave Game</button>
+					<button id="continue-game" type="button" class="btn btn-lg btn-outline-light">Continue</button>
+				</div>
+			</div>
+			<br>
+		</div>
+		<div class="menu" id="start-menu" style="visibility: hidden;">
+			<div class="container" style="padding-top: 5%">
+				<div class="row" style="text-align: center;"> 
+					<h3> Starting Game</h3>
+				</div>
+				<hr>
+				<div class="d-grid gap-4">
+					<button id="leave-game-2" type="button" class="btn btn-lg btn-outline-danger">Leave Game</button>
+					<button id="start-game" type="button" class="btn btn-lg btn-outline-success">Start Game</button>
+				</div>
+				<hr>
+				<p id="start-menu-difficulty" style="font-size: 80%; text-align: center;"> Difficulty: 1</p>
+			</div>
+		</div>
+		<div class="menu" id="dead-menu" style="visibility: hidden;">
+			<div class="container" style="padding-top: 5%">
+				<div class="row" style="text-align: center;"> 
+					<h3>You Died</h3>
+				</div>
+				<hr>
+				<div class="row" style="text-align: center;"> 
+					<h4 id="dead-timer"></h4>
+				</div>
+			</div>
+			<br>
+		</div>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
 </body>
-
-</html>

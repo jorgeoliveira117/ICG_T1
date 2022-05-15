@@ -71,6 +71,7 @@ const POWERUP_SPEED = 2.5;
 var powerUpLimit = 0;
 var poweredUp = false;
 
+var levelMapName = "";
 var levelN = 1;
 var ghostKills = 0;
 var points = 0;
@@ -79,10 +80,12 @@ var totalGhostKills = 0;
 var totalPoints = 0;
 var lives = 3;
 
+var gameTimer = 0;
 var gamePaused = true;
 var gameOver = false;
 var DEATH_TIMER = 5000;
 var deathTimer = 0;
+
 
 // Functions are called
 //  1. Initialize the level
@@ -98,11 +101,17 @@ requestAnimationFrame(computeFrame);
 
 window.addEventListener('resize', resizeWindow);
 
+
+document.getElementById("start-game").onclick = startGame;
+document.getElementById("continue-game").onclick = continueGame;
+document.getElementById("leave-game").onclick = leaveGame;
+document.getElementById("leave-game-2").onclick = leaveGame;
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false;
 var mouseDown = false, mouseUp = true;
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
+document.addEventListener('keypress', onDocumentKeyClick, false);
 document.addEventListener("mousedown", onMouseDown);
 document.addEventListener("mouseup", onMouseUp);
 document.onmousemove = handleMouseMove;
@@ -149,6 +158,14 @@ function onDocumentKeyUp(event) {
             break;
     }
 }
+function onDocumentKeyClick(event){
+    switch (event.keyCode) {
+        case 112: //p
+            pauseGame();
+            break;
+    }
+}
+
 function onMouseDown(){
     mouseDown = true;
     mouseUp = false;
@@ -163,6 +180,7 @@ function onMouseUp(){
 function loadLevel(levelName){
     helper.initEmptyScene(sceneElements);
 
+    levelMapName = levelName;
     gameIsReady = false;
 
     // Calculate how many blocks the map has
@@ -296,12 +314,13 @@ function loadLevel(levelName){
     // Create Pacman
     // ************************** //
     const pacman = models.createPacman(sceneElements.camera);
-    pacman.translateY(1.5);
     pacman.position.copy(pacmanSpawnPoint);
+    pacman.rotation.y += Math.PI/2;
     pacman.MOV_SPEED_X *= (1 + levelN * GHOST_SPEED_MODIFIER);
     pacman.MOV_SPEED_Z *= (1 + levelN * GHOST_SPEED_MODIFIER);
     sceneElements.sceneGraph.add(pacman);
 
+    pacman.add(sceneElements.camera);
     // Hitbox
     //pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     //pacmanHitbox.setFromObject(pacman);
@@ -343,15 +362,18 @@ function loadLevel(levelName){
     });
 
     poweredUp = false;
-    levelN++;
     ghostKills = 0;
     points = 0;
     isAlive = true;
+    document.getElementById("start-menu").style.visibility = "visible";
+    document.getElementById("start-menu-difficulty").innerHTML = "Difficulty: " + levelN;
 
     lives = 3;
+    //levelN++;
 
+    gameTimer = 0;
     gameIsReady = true;
-    gamePaused = false;
+    gamePaused = true;
 }
 
 
@@ -385,17 +407,22 @@ var axis = new THREE.Vector3(0, 0, 1);
 function handleMouseMove(e) {
     e.preventDefault();
 
+    var deltaX = e.clientX - mouseX;
+    mouseX = e.clientX;
+    
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    /*
     if(mouseDown){
         var deltaY = e.clientY - mouseY;
         mouseY = e.clientY;
         pacman.rotateOnAxis(axis, deltaY * sensitivityX);
     }
-   
+    */
+    if(gamePaused)
+        return;
     // Get the difference between the previous coordinates
-    var deltaX = e.clientX - mouseX;
-    mouseX = e.clientX;
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    
+    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -420,10 +447,14 @@ function computeFrame(time) {
     delta = (time - lastTime) / 1000;
     lastTime = time;
 
-    if(!isAlive && Date.now() > deathTimer)
-        respawn();
+    if(!isAlive){
+        document.getElementById("dead-timer").innerHTML = "Respawning in " + (Math.floor((deathTimer - Date.now())/1000) + 1) + "..."  ;
+        if(deathTimer < Date.now())
+            respawn();
+    }
 
-    if(gameIsReady && !gamePaused){
+    if(gameIsReady && !gamePaused && isAlive){
+        gameTimer += delta;
         movePacman();
         checkPacmanBounds();
         checkLights();
@@ -434,12 +465,8 @@ function computeFrame(time) {
         animatePortals();
         checkPowerUp();
 
-        moveCamera();
-        // Adapted from
-        // https://sbcode.net/threejs/raycaster2/
-        /*
-        
-        */
+        //moveCamera();
+        document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
         
     }
 
@@ -460,6 +487,9 @@ function respawn(){
     gamePaused = false;
 
     pacman.position.copy(pacmanSpawnPoint);
+
+    document.getElementById("dead-menu").style.visibility = "hidden";
+
 }
 function checkCollisions(){
 
@@ -490,6 +520,7 @@ function checkCollisions(){
                     ghost.path = [];
                 }else{
                     if(isAlive){
+                        
                         // Pacman died
                         isAlive = false;
                         lives --;
@@ -498,11 +529,18 @@ function checkCollisions(){
                         ghosts.forEach((ghost) => {
                             ghost.position.copy(ghostSpawnPoint);
                         });
+
                         gamePaused = true;
-                        if( lives <= 0)
+                        if( lives <= 0){
                             gameOver = true;
-                        
+
+                        }
+                        document.getElementById("dead-menu").style.visibility = "visible";
+                        document.getElementById("lives").innerHTML = "Lives: " + lives;
+                        if(lives == 0)
+                            document.getElementById("lives").style.color = "red";
                         deathTimer = Date.now() + DEATH_TIMER;
+                        
                     }
                 }
             }
@@ -581,6 +619,7 @@ function checkLights(){
 
 function addPoints(n){
     points += n;
+    document.getElementById("score").innerHTML = "Points: " + points;
     console.log("Points: " + points);
 }
 
@@ -1046,6 +1085,8 @@ function moveGhosts(){
 }
 
 function moveCamera(){
+    // Adapted from
+    // https://sbcode.net/threejs/raycaster2/
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     sceneElements.camera.getWorldPosition(cameraWorldPos);
     dir.subVectors(cameraWorldPos, pacman.position).normalize();
@@ -1307,4 +1348,48 @@ function printPath(path){
 function lerp (start, end, amount){
     // Taken from https://codepen.io/ma77os/pen/OJPVrP
     return (1-amount) * start + amount * end;
+}
+
+// ************************** //
+// HUD events
+// ************************** //
+
+function startGame(){
+    if(!gameIsReady)
+        return;
+    console.log("Starting game");
+    document.getElementById("start-menu").style.visibility = "hidden";
+    document.getElementById("score").innerHTML = "Points: " + points;
+    document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
+    document.getElementById("lives").innerHTML = "Lives: " + lives;
+    document.getElementById("lives").style.color = "aliceblue";
+    gamePaused = false;
+}
+
+function pauseGame(){
+    if(!isAlive)
+        return;
+    console.log("Pausing game");
+    gamePaused = true;
+    document.getElementById("pause-menu").style.visibility = "visible";
+}
+
+function restartGame(){
+    // Implement
+    // Implement
+    // Implement
+    console.log("Restarting game");
+}
+
+function continueGame(){
+    console.log("Unpausing game");
+    gamePaused = false;
+    document.getElementById("pause-menu").style.visibility = "hidden";
+}
+
+function leaveGame(){
+    // Implement
+    // Implement
+    // Implement
+    console.log("Leaving game");
 }

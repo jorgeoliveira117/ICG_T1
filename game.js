@@ -9,11 +9,11 @@ const sceneElements = {
 };
 
 // Hitboxes in the game
-const wallMeshes = []; 
-const portals = [];
-const ghostHitboxes = [];
-const pointHitboxes = [];
-const powerUpHitboxes = [];
+var wallMeshes = []; 
+var portals = [];
+var ghostHitboxes = [];
+var pointHitboxes = [];
+var powerUpHitboxes = [];
 const pacmanHitbox = new THREE.Sphere();
 //const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
 //pacmanHitbox.name = "pacman_hitbox";
@@ -106,9 +106,11 @@ window.addEventListener('resize', resizeWindow);
 document.getElementById("start-game").onclick = startGame;
 document.getElementById("continue-game").onclick = continueGame;
 document.getElementById("restart-game").onclick = restartGame;
+document.getElementById("next-game").onclick = nextLevel;
 document.getElementById("leave-game").onclick = leaveGame;
 document.getElementById("leave-game-2").onclick = leaveGame;
 document.getElementById("leave-game-3").onclick = leaveGame;
+document.getElementById("leave-game-4").onclick = leaveGame;
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false;
 var mouseDown = false, mouseUp = true;
@@ -182,9 +184,11 @@ function onMouseUp(){
 
 function loadLevel(levelName){
 
-    levelMapName = levelName;
     gameIsReady = false;
-
+    
+    levelMapName = levelName;
+    
+    clearGame();
     // Calculate how many blocks the map has
 
     const levelMap = levels.getLevel(levelName)
@@ -193,7 +197,7 @@ function loadLevel(levelName){
     var i = 0;
     var k = 0;
     var line = "";
-
+    level.splice(0, level.length);
     for(i = 0; i < levelMap.length; i++){
         line = "";
         for(k = 0; k < levelMap[0].length; k+=2){
@@ -252,7 +256,7 @@ function loadLevel(levelName){
     var powerUpN = 0;
     var ghostN = 0;
     var portalsN = 0;
-
+    console.log(pointHitboxes.length);
     for(line = 0; line < level.length; line++){
         for(char = 0; char < level[0].length; char++){
             switch(level[line][char]){
@@ -315,7 +319,7 @@ function loadLevel(levelName){
             }
         }
     }
-
+    console.log(pointHitboxes.length);
     // ************************** //
     // Create Pacman
     // ************************** //
@@ -371,7 +375,8 @@ function loadLevel(levelName){
     document.getElementById("start-menu").style.visibility = "visible";
     document.getElementById("start-menu-difficulty").innerHTML = "Difficulty: " + levelN;
 
-    lives = 0;
+    //lives = 10;
+    lives = 3;
     //levelN++;
 
     gameTimer = 0;
@@ -380,26 +385,6 @@ function loadLevel(levelName){
     gamePaused = true;
 }
 
-
-function getRandomPosition(radius, y){
-    // for x and z to be inside of the circle:
-    // x^2 + z^2 < radius
-
-    // assign x a value from 0 to radius
-    var x = Math.random() * radius;
-
-    // assign z a value from 0 to square root of (radius^2 - x^2)
-    var z = Math.random() * Math.sqrt(radius*radius - x*x);
-
-    // make x and z positive or negative
-
-    if (Math.floor(Math.random() * 2) - 1 < 0 )
-        x *= -1;
-    if (Math.floor(Math.random() * 2) - 1 < 0 )
-        z *= -1;
-
-    return new THREE.Vector3(x, y, z);
-}
 
 var mouseX = 0;
 var mouseY = 0;
@@ -411,22 +396,16 @@ var axis = new THREE.Vector3(0, 0, 1);
 function handleMouseMove(e) {
     e.preventDefault();
 
+    // Get the difference between the previous coordinates
     var deltaX = e.clientX - mouseX;
     mouseX = e.clientX;
     
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    /*
-    if(mouseDown){
-        var deltaY = e.clientY - mouseY;
-        mouseY = e.clientY;
-        pacman.rotateOnAxis(axis, deltaY * sensitivityX);
-    }
-    */
+
     if(gamePaused)
         return;
-    // Get the difference between the previous coordinates
     
-    //pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
 }
 
 
@@ -470,7 +449,7 @@ function computeFrame(time) {
         animatePortals();
         checkPowerUp();
 
-        //moveCamera();
+        moveCamera();
         document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
         
     }
@@ -564,22 +543,44 @@ function killPacman(){
     deathTimer = Date.now() + DEATH_TIMER;
 }
 
-function gameOver(){
-    gameIsOver = true;
-    document.getElementById("game-over").style.visibility = "visible";
-    document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
-}
-
-function killGhost(ghost){
-    
-}
-
 function respawn(){
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
     isAlive = true;
     gamePaused = false;
     pacman.position.copy(pacmanSpawnPoint);
     document.getElementById("dead-menu").style.visibility = "hidden";
+}
+
+function killGhost(ghost){
+    
+}
+
+function checkWinCondition(){
+    console.log(pointHitboxes.length)
+    console.log(powerUpHitboxes.length)
+    if(pointHitboxes.length == 0 && powerUpHitboxes.length == 0){
+        gameWon();
+        return true;
+    }else
+        return false;
+
+}
+
+function gameOver(){
+    gameIsOver = true;
+    document.getElementById("game-over").style.visibility = "visible";
+    document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
+}
+
+function gameWon(){
+    gameIsOver = true;
+    gamePaused = true;
+    document.getElementById("win-menu").style.visibility = "visible";
+}
+
+function nextLevel(){
+    levelN++;
+    restartGame();
 }
 
 function addPoints(n){
@@ -619,9 +620,16 @@ function activatePowerUp(){
 function clearGame(){
     // Removes models and hitboxes
     sceneElements.sceneGraph.clear();
-    ghostHitboxes.splice(0, ghostHitboxes.length);
-    pointHitboxes.splice(0, pointHitboxes.length);
-    powerUpHitboxes.splice(0, powerUpHitboxes.length);
+    wallMeshes = []; 
+    portals = [];
+    ghostHitboxes = [];
+    pointHitboxes = [];
+    powerUpHitboxes = [];
+    document.getElementById("win-menu").style.visibility = "hidden";
+    document.getElementById("game-over").style.visibility = "hidden";
+    document.getElementById("score").innerHTML = "";
+    document.getElementById("timer").innerHTML = "";
+    document.getElementById("lives").innerHTML = "";
 }
 
 // ************************** //
@@ -640,10 +648,6 @@ function startGame(){
     gamePaused = false;
 }
 
-function nextLevel(){
-
-}
-
 function pauseGame(){
     if(!isAlive)
         return;
@@ -654,13 +658,6 @@ function pauseGame(){
 
 function restartGame(){
     console.log("Restarting game");
-
-    clearGame();
-
-    document.getElementById("game-over").style.visibility = "hidden";
-    document.getElementById("score").innerHTML = "";
-    document.getElementById("timer").innerHTML = "";
-    document.getElementById("lives").innerHTML = "";
     loadLevel(levelMapName);
 }
 
@@ -675,5 +672,6 @@ function leaveGame(){
     // Implement
     // Implement
     // sceneElements.sceneGraph.clear();
+    // marcar como hidden as outras janelas e vars do jogo = ""
     console.log("Leaving game");
 }

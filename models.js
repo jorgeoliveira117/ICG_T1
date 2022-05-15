@@ -160,6 +160,27 @@ const models = {
     // Ghost
     // ************************** //
     createGhost: function(n, colorPrimary, colorSecondary){
+        
+        function getRandomPosition(radius, y){
+            // for x and z to be inside of the circle:
+            // x^2 + z^2 < radius
+        
+            // assign x a value from 0 to radius
+            var x = Math.random() * radius;
+        
+            // assign z a value from 0 to square root of (radius^2 - x^2)
+            var z = Math.random() * Math.sqrt(radius*radius - x*x);
+        
+            // make x and z positive or negative
+        
+            if (Math.floor(Math.random() * 2) - 1 < 0 )
+                x *= -1;
+            if (Math.floor(Math.random() * 2) - 1 < 0 )
+                z *= -1;
+        
+            return new THREE.Vector3(x, y, z);
+        }
+
         const ghostMaterial = new THREE.MeshPhongMaterial({ color: colorPrimary });
         const ghostTailSphereMaterial = new THREE.MeshToonMaterial({ color: colorSecondary });
 

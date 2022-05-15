@@ -51,6 +51,7 @@ function checkCollisions(){
             sceneElements.sceneGraph.remove(point);
             pointHitboxes.splice(i,1);
             addPoints(10);
+            checkWinCondition();
             return;
         }
     }
@@ -70,7 +71,8 @@ function checkCollisions(){
                 }
             }
             addPoints(50);
-            activatePowerUp();
+            if(!checkWinCondition())
+                activatePowerUp();
             return;
         }
     }

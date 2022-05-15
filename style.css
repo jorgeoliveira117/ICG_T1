@@ -25,6 +25,14 @@ body {
 	color:aliceblue;
 	font-size: 150%;
 }
+.powerup{
+	position: fixed;
+	bottom: 10%;
+	width: 100%;
+	color:rgb(252, 138, 0);
+	font-size: 200%;
+	text-align: center;
+}
 
 .menu{
     position: absolute;

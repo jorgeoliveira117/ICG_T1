@@ -522,6 +522,8 @@ function checkCollisions(){
                     if(isAlive){
                         
                         // Pacman died
+
+                        powerUpLimit = 0;
                         isAlive = false;
                         lives --;
                         console.log(ghostName + " hit Pacman");
@@ -628,12 +630,14 @@ function activatePowerUp(){
 
     // Make ghosts scared
     ghosts.forEach((ghost) => {
-        ghost.setScared();
-        const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-        const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
-        ghost.position.x = blockCenter.x;
-        ghost.position.z = blockCenter.z;
-        ghost.path = [];
+        if(!ghost.isDead){
+            ghost.setScared();
+            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+            const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
+            ghost.position.x = blockCenter.x;
+            ghost.position.z = blockCenter.z;
+            ghost.path = [];
+        }
     })
 
     if(poweredUp){
@@ -673,8 +677,15 @@ function checkPowerUp(){
             const path = getBlockCenter(mapCoords.x, mapCoords.z)
             ghost.path = [path];
         })
+        document.getElementById("powerup").innerHTML = "";
         return;
     }
+
+    const remainingPowerUp = Math.floor((powerUpLimit - Date.now())/1000) + 1;
+    if(remainingPowerUp > 1)
+        document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " seconds!";
+    else
+        document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " second!";
     // Animate ambient light
     ambientLight.intensity += ambientLight.SPEED * delta;
     if(ambientLight.intensity >= ambientLight.MAX_INTENSITY){
@@ -1391,5 +1402,6 @@ function leaveGame(){
     // Implement
     // Implement
     // Implement
+    // sceneElements.sceneGraph.clear();
     console.log("Leaving game");
 }

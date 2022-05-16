@@ -87,15 +87,15 @@ var gamePaused = true;
 var DEATH_TIMER = 5000;
 var deathTimer = 0;
 
+// Settings
 var dynamicCamera = true;
 var mouseRotation = true;
 
 
 // Functions are called
-//  1. Initialize the level
+//  1. Initialize an empty scene
 //  2. Animate
 helper.initEmptyScene(sceneElements);
-//load3DObjects(sceneElements.sceneGraph);
 requestAnimationFrame(computeFrame);
 
 // HANDLING EVENTS
@@ -489,6 +489,9 @@ function computeFrame(time) {
     if(gameIsReady && !gamePaused && !document.hasFocus()){
         pauseGame();
     }
+
+    if(gamePaused && powerUpLimit >= Date.now())
+        powerUpLimit += delta * 1000;
 
     if(gameIsReady && !gamePaused && isAlive){
         gameTimer += delta;

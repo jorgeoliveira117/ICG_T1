@@ -123,7 +123,6 @@ function getShortestPathTo(x, z, destX, destZ){
 
 function getPathToCorner(x, z){
     // Finds shortest path to the closest corner
-
     var quarter = "";
     // Find which quarter of the map it is
     if(z > levelHeightCoord / 2)
@@ -134,11 +133,10 @@ function getPathToCorner(x, z){
         quarter += "_LEFT";
     else    
         quarter += "_RIGHT";    
-
     var block;
     switch(quarter){
         case "TOP_RIGHT":
-            block = getClosestBlockTo(0, levelHeight-1);
+            block = getClosestBlockTo(levelWidth-1,0);
             break;
         case "TOP_LEFT":
             block = getClosestBlockTo(0, 0);
@@ -147,13 +145,17 @@ function getPathToCorner(x, z){
             block = getClosestBlockTo(levelWidth-1,levelHeight-1);
             break;
         case "BOTTOM_LEFT":
-            block = getClosestBlockTo(levelWidth-1,0);
+            block = getClosestBlockTo(0, levelHeight-1);
             break;
     }
 
     block = getBlockCenter(block.x, block.z);
 
     return getShortestPathTo(x, z, block.x, block.z);
+}
+
+function getPathToNear(x, z, destX, destZ, minDistance){
+
 }
 
 function getClosestBlockTo(x, z){

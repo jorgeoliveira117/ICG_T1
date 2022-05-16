@@ -4,7 +4,7 @@ body {
 }
 
 .score{
-	position: fixed;
+	position: absolute;
 	top: 7%;
 	left: 1%;
 	color:aliceblue;
@@ -12,21 +12,21 @@ body {
 
 }
 .timer{
-	position: fixed;
+	position: absolute;
 	top: 1%;
 	left: 1%;
 	color:aliceblue;
 	font-size: 150%;
 }
 .lives{
-	position: fixed;
+	position: absolute;
 	bottom: 1%;
 	left: 1%;
 	color:aliceblue;
 	font-size: 150%;
 }
 .powerup{
-	position: fixed;
+	position: absolute;
 	bottom: 10%;
 	width: 100%;
 	color:rgb(252, 138, 0);
@@ -36,7 +36,7 @@ body {
 
 .menu{
     position: absolute;
-    top: 30%;
+    top: 25%;
     left: 30%;
     background-color: rgb(12, 5, 48);
 	width: 40%;

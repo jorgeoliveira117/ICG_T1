@@ -210,3 +210,27 @@ function checkLights(){
     // All lights are turned off to guarantee that there are a maximum of 3 lights on at time
 }
 
+function animateAmbientLight(){
+    // Animate ambient light
+    const ambientLight = sceneElements.sceneGraph.getObjectByName("ambientLight");
+    ambientLight.intensity += ambientLight.SPEED * delta;
+    if(ambientLight.intensity >= ambientLight.MAX_INTENSITY){
+        ambientLight.intensity = ambientLight.MAX_INTENSITY;
+        ambientLight.SPEED *= -1;
+    }else if (ambientLight.intensity <= ambientLight.MIN_INTENSITY){
+        ambientLight.intensity = ambientLight.MIN_INTENSITY;
+        ambientLight.SPEED *= -1;
+    }
+}
+
+function animateRendererColor(){
+    // Animate renderer color
+    sceneElements.renderer.setClearAlpha(sceneElements.renderer.getClearAlpha() + sceneElements.renderer.SPEED * delta);
+    if(sceneElements.renderer.getClearAlpha() >= sceneElements.renderer.MAX_INTENSITY){
+        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MAX_INTENSITY);
+        sceneElements.renderer.SPEED *= -1;
+    }else if (sceneElements.renderer.getClearAlpha() <= sceneElements.renderer.MIN_INTENSITY){
+        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MIN_INTENSITY);
+        sceneElements.renderer.SPEED *= -1;
+    }
+}

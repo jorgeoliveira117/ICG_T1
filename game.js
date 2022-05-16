@@ -16,9 +16,6 @@ var ghostHitboxes = [];
 var pointHitboxes = [];
 var powerUpHitboxes = [];
 const pacmanHitbox = new THREE.Sphere();
-//const pacmanHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-//pacmanHitbox.name = "pacman_hitbox";
-//pacmanHitbox.setFromObject(ghost);
 
 // Game control properties
 var gameIsReady = false;
@@ -528,7 +525,6 @@ function checkPowerUp(){
     if(!poweredUp)
         return;
 
-    const ambientLight = sceneElements.sceneGraph.getObjectByName("ambientLight");
     if(Date.now() > powerUpLimit){
         poweredUp = false;
 
@@ -539,6 +535,7 @@ function checkPowerUp(){
 
         // Reset Lights
         sceneElements.renderer.setClearColor('rgb(0, 150, 255)', 0.4);
+        const ambientLight = sceneElements.sceneGraph.getObjectByName("ambientLight");
         ambientLight.intensity = ambientLight.MIN_INTENSITY;
 
         ghosts.forEach((ghost) => {
@@ -557,24 +554,8 @@ function checkPowerUp(){
         document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " seconds!";
     else
         document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " second!";
-    // Animate ambient light
-    ambientLight.intensity += ambientLight.SPEED * delta;
-    if(ambientLight.intensity >= ambientLight.MAX_INTENSITY){
-        ambientLight.intensity = ambientLight.MAX_INTENSITY;
-        ambientLight.SPEED *= -1;
-    }else if (ambientLight.intensity <= ambientLight.MIN_INTENSITY){
-        ambientLight.intensity = ambientLight.MIN_INTENSITY;
-        ambientLight.SPEED *= -1;
-    }
-    // Animate renderer color
-    sceneElements.renderer.setClearAlpha(sceneElements.renderer.getClearAlpha() + sceneElements.renderer.SPEED * delta);
-    if(sceneElements.renderer.getClearAlpha() >= sceneElements.renderer.MAX_INTENSITY){
-        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MAX_INTENSITY);
-        sceneElements.renderer.SPEED *= -1;
-    }else if (sceneElements.renderer.getClearAlpha() <= sceneElements.renderer.MIN_INTENSITY){
-        sceneElements.renderer.setClearAlpha(sceneElements.renderer.MIN_INTENSITY);
-        sceneElements.renderer.SPEED *= -1;
-    }
+    animateAmbientLight();
+    animateRendererColor();
 }
 
 function killPacman(){
@@ -590,6 +571,8 @@ function killPacman(){
     console.log("Lives: " + lives);
     ghosts.forEach((ghost) => {
         ghost.position.copy(ghostSpawnPoint);
+        if(ghost.isDead)
+            ghost.setAlive(); 
     });
 
     document.getElementById("dead-menu").style.visibility = "visible";

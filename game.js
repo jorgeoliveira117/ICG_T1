@@ -15,6 +15,9 @@ var portals = [];
 var ghostHitboxes = [];
 var pointHitboxes = [];
 var powerUpHitboxes = [];
+var fruitLocations = [];
+var fruits = [];
+var fruitHitboxes = [];
 const pacmanHitbox = new THREE.Sphere();
 
 // Game control properties
@@ -60,6 +63,9 @@ const POSITION_ERROR = 0.1;
 // Game values
 const PACMAN_SPEED_MODIFIER = 0.1;
 const GHOST_SPEED_MODIFIER = 0.1;
+
+const FRUIT_SPAWN_INTERVAL = 20 * 1000;
+var nextFruitSpawn = 0;
 
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
@@ -340,15 +346,15 @@ function loadLevel(levelName){
                     break;
                 case "P":
                     // Pacman Spawn
-                    pacmanSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2)
+                    pacmanSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     break;
                 case "G":
                     // Ghost Spawn
-                    ghostSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2)
+                    ghostSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     break;
                 case "F":
                     // Fruit
-                    // Not implemented
+                    fruitLocations.push(new THREE.Vector3(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2));
                     break;
                 default:
                     // Portal
@@ -416,6 +422,7 @@ function loadLevel(levelName){
 
     totalPortals = portalsN;
 
+    nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
 
     poweredUp = false;
     ghostKills = 0;
@@ -496,11 +503,14 @@ function computeFrame(time) {
         checkLights();
         moveGhosts();
         checkCollisions();
+        
+        checkPowerUp();
+        checkFruitSpawn();
+
         animatePacman();
         animateGhosts();
         animatePortals();
-        checkPowerUp();
-
+        
         if(dynamicCamera)
             moveCamera();
         document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
@@ -558,6 +568,40 @@ function checkPowerUp(){
     animateRendererColor();
 }
 
+function checkWinCondition(){
+    if(pointHitboxes.length == 0 && powerUpHitboxes.length == 0){
+        gameWon();
+        return true;
+    }else
+        return false;
+}
+
+function checkFruitSpawn(){
+    if(Date.now() < nextFruitSpawn)
+        return;
+
+    // Spawn a fruit
+    if(fruits.length == 3)
+        return;
+    console.log("Spawning fruit");
+    // Find a spawn location
+    for(var i = 0; i < fruitLocations.length; i++){
+        if(fruits.find((f) => 
+            f.position.x == fruitLocations[i].x && 
+            f.position.z == fruitLocations[i].z) == null){
+            const fruit = models.createFruit();
+            fruit.position.copy(fruitLocations[i]);
+            sceneElements.sceneGraph.add(fruit);
+            fruits.push(fruit);
+            // Hitbox
+            const fruitHitbox = new THREE.Sphere(fruit.position, 0.25);
+            fruitHitboxes.push(fruitHitbox);
+            break;
+        }
+    }    
+    nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
+}
+
 function killPacman(){
     powerUpLimit = 0;
     isAlive = false;
@@ -604,16 +648,6 @@ function killGhost(ghost){
     ghost.path = [];
 }
 
-function checkWinCondition(){
-    console.log(pointHitboxes.length)
-    console.log(powerUpHitboxes.length)
-    if(pointHitboxes.length == 0 && powerUpHitboxes.length == 0){
-        gameWon();
-        return true;
-    }else
-        return false;
-
-}
 
 function gameOver(){
     document.exitPointerLock();
@@ -675,6 +709,9 @@ function clearGame(){
     ghostHitboxes = [];
     pointHitboxes = [];
     powerUpHitboxes = [];
+    fruitHitboxes = [];
+    fruitLocations = [];
+    fruits = [];
     document.getElementById("win-menu").style.visibility = "hidden";
     document.getElementById("game-over").style.visibility = "hidden";
     document.getElementById("score").innerHTML = "";

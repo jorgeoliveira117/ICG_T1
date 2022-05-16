@@ -45,6 +45,17 @@ const ghostScaredMaterial = new THREE.MeshPhongMaterial({ color: 0x2129FF, emiss
 
 const portalRingMaterial = new THREE.MeshToonMaterial( { color: 0xB16CC4, side: THREE.DoubleSide } );
 
+const fruitGeometry = new THREE.IcosahedronGeometry(0.8, 0);
+
+const fruitColors = [
+    0x38FF6D,
+    0x38E1FF,
+    0xCA38FF,
+    0xFF3849,
+    0xF6FC42,
+    0xFCAB42
+]
+
 const models = {
 
     // ************************** //
@@ -462,10 +473,20 @@ const models = {
             portalQuarterRing.rotation.y = Math.PI/2 * dir.x;
             portalSexthRing.rotation.y = Math.PI/2 * dir.x;
         })
-        
-        
 
         return portal;
     },
 
+    createFruit: function(){
+        const color = fruitColors[Math.floor(Math.random() * fruitColors.length)];
+        console.log(color);
+        const fruitMaterial = new THREE.MeshPhongMaterial({ color: color});
+        const fruit = new THREE.Mesh(fruitGeometry, fruitMaterial);
+        fruit.ROTATION_SPEED = 0.8;
+        fruit.BOB_SPEED = 0.25;
+        fruit.BOB_MAX_HEIGHT = 1.8;
+        fruit.BOB_MIN_HEIGHT = 0.8;
+        fruit.castShadow = true;
+        return fruit;
+    },
 }

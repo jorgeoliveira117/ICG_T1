@@ -66,6 +66,24 @@ function checkCollisions(){
             return;
         }
     }
+    // Check for collision with fruits
+    for(i = 0; i < fruitHitboxes.length; i++){
+        if(pacmanHitbox.intersectsSphere(fruitHitboxes[i])){
+            var fruit;
+            for(var k = 0; k < fruits.length; k++){
+                fruit = fruits[k];
+                if(fruit.position.x == fruitHitboxes[i].center.x && 
+                   fruit.position.z == fruitHitboxes[i].center.z){
+                    sceneElements.sceneGraph.remove(fruit);
+                    fruits.splice(k, 1);
+                    fruitHitboxes.splice(i,1);
+                    addPoints(200);
+                    nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
+                    return;
+                }
+            }
+        }
+    }
 }
 
 function checkWalls(){

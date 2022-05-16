@@ -87,6 +87,9 @@ var gamePaused = true;
 var DEATH_TIMER = 5000;
 var deathTimer = 0;
 
+var dynamicCamera = true;
+var mouseRotation = true;
+
 
 // Functions are called
 //  1. Initialize the level
@@ -114,16 +117,44 @@ document.getElementById("leave-game-4").onclick = leaveGame;
 
 document.getElementById("load-level").onclick = loadGameLevel;
 
-
+document.getElementById('dynamic-camera').addEventListener('change', (event) => {
+  toggleDynamicCamera(event);
+})
+document.getElementById('mouse-rotation').addEventListener('change', (event) => {
+  toggleMouseRotation(event);
+})
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
 var mouseDown = false, mouseUp = true;
+
+const element = document.querySelector("#Tag3DScene");
+
+
+// https://www.html5rocks.com/en/tutorials/pointerlock/intro/
+element.requestPointerLock = element.requestPointerLock ||
+			     element.mozRequestPointerLock ||
+			     element.webkitRequestPointerLock;
+
+
+// Ask the browser to release the pointer
+document.exitPointerLock = document.exitPointerLock ||
+			   document.mozExitPointerLock ||
+			   document.webkitExitPointerLock;
+
+// Ask the browser to lock the pointer
+//
+//document.exitPointerLock();
+
+
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
 document.addEventListener('keypress', onDocumentKeyClick, false);
 document.addEventListener("mousedown", onMouseDown);
 document.addEventListener("mouseup", onMouseUp);
+document.addEventListener("mousemove", handleMouseMove, false);
 document.onmousemove = handleMouseMove;
+
+
 
 // Update render image size and camera aspect when the window is resized
 function resizeWindow(eventParam) {
@@ -397,9 +428,7 @@ function loadLevel(levelName){
     document.getElementById("start-menu").style.visibility = "visible";
     document.getElementById("start-menu-difficulty").innerHTML = "Difficulty: " + levelN;
 
-    //lives = 10;
     lives = 3;
-    //levelN++;
 
     gameTimer = 0;
     gameIsReady = true;
@@ -418,16 +447,14 @@ var axis = new THREE.Vector3(0, 0, 1);
 function handleMouseMove(e) {
     e.preventDefault();
 
-    // Get the difference between the previous coordinates
-    var deltaX = e.clientX - mouseX;
-    mouseX = e.clientX;
-    
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    var movementX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
 
     if(gamePaused)
-        return;
-    
-    pacman.rotateOnAxis(axisVertical, -deltaX * sensitivityX);
+      return;
+      
+    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+    if(mouseRotation)
+        pacman.rotateOnAxis(axisVertical, -movementX * sensitivityX);
 }
 
 
@@ -459,6 +486,10 @@ function computeFrame(time) {
             respawn();
     }
 
+    if(gameIsReady && !gamePaused && !document.hasFocus()){
+        pauseGame();
+    }
+
     if(gameIsReady && !gamePaused && isAlive){
         gameTimer += delta;
         movePacman();
@@ -471,7 +502,8 @@ function computeFrame(time) {
         animatePortals();
         checkPowerUp();
 
-        moveCamera();
+        if(dynamicCamera)
+            moveCamera();
         document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
         
     }
@@ -589,6 +621,7 @@ function checkWinCondition(){
 }
 
 function gameOver(){
+    document.exitPointerLock();
     gameIsOver = true;
     document.getElementById("game-over").style.visibility = "visible";
     document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
@@ -597,11 +630,11 @@ function gameOver(){
 function gameWon(){
     gameIsOver = true;
     gamePaused = true;
+    levelN++;
     document.getElementById("win-menu").style.visibility = "visible";
 }
 
 function nextLevel(){
-    levelN++;
     restartGame();
 }
 
@@ -668,18 +701,23 @@ function startGame(){
     document.getElementById("lives").innerHTML = "Lives: " + lives;
     document.getElementById("lives").style.color = "aliceblue";
     gamePaused = false;
+    
+    element.requestPointerLock();
 }
 
 function pauseGame(){
     if(!isAlive)
         return;
     console.log("Pausing game");
+    document.exitPointerLock();
     gamePaused = true;
     document.getElementById("pause-menu").style.visibility = "visible";
 }
 
 function restartGame(){
     console.log("Restarting game");
+    powerUpLimit = 0;
+    checkPowerUp();
     loadLevel(levelMapName);
 }
 
@@ -687,10 +725,13 @@ function continueGame(){
     console.log("Unpausing game");
     gamePaused = false;
     document.getElementById("pause-menu").style.visibility = "hidden";
+    element.requestPointerLock();
 }
 
 function leaveGame(){
     console.log("Leaving game");
+    powerUpLimit = 0;
+    checkPowerUp();
     clearGame();
     document.getElementById("win-menu").style.visibility = "hidden";
     document.getElementById("game-over").style.visibility = "hidden";
@@ -699,11 +740,13 @@ function leaveGame(){
     document.getElementById("timer").innerHTML = "";
     document.getElementById("lives").innerHTML = "";
     document.getElementById("main-menu").style.visibility = "visible";
+    document.getElementById("side-menu").style.visibility = "visible";
 }
 
 function loadGameLevel(){
     const baseName = "map-";
     document.getElementById("main-menu").style.visibility = "hidden";
+    document.getElementById("side-menu").style.visibility = "hidden";
     for(var i = 1; i <= levels.howManyLevels(); i++){
         if(document.getElementById(baseName + i).classList.contains("active")){
             loadLevel(levels.getLevelNameByNum(i));
@@ -715,4 +758,18 @@ function loadGameLevel(){
 
 function openGameModelsMenu(){
     
+}
+
+function toggleDynamicCamera(event){
+    if (event.currentTarget.checked)
+        dynamicCamera = true;
+    else
+        dynamicCamera = false;
+}
+
+function toggleMouseRotation(event){
+    if (event.currentTarget.checked)
+        mouseRotation = true;
+    else
+        mouseRotation = false;
 }

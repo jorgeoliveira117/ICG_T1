@@ -60,13 +60,36 @@ body {
 	color: aliceblue;
 	border-style: solid;
 }
+.side-menu{
+    position: absolute;
+    top: 10%;
+    left: 8%;
+    background-color: rgb(12, 5, 48);
+	width: 20%;
+    height: auto;
+	border-radius: 4px;
+	border-width: 2px;
+	border-color: aliceblue;
+	color: aliceblue;
+	border-style: solid;
+}
 
+.btn{
+	border-radius: 0px;
+}
 
+.form-check{
+	font-size: 80%;
 
-.carousel .item img {
-	max-height: 28px;
-	min-width: auto;
-  }
+}
+
+.w-100  {
+	max-height: 50%;
+	max-width: 70%;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+}
 
 
 *{
@@ -75,6 +98,7 @@ body {
 	font-size: 120%;
 }
 ​
+
 /* 
 *{
 	cursor: none;

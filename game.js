@@ -27,7 +27,7 @@ const ghosts = [];
 const GHOST_PROPERTIES = [
     {primary: 0xF80404, secondary: 0xA30404, speed: 1.1, path: "SHORTEST"},
     {primary: 0xF8ACF4, secondary: 0xA3ACF4, speed: 1.0, path: "NEAR"},
-    {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95, path: "CORRIDOR"},
+    {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95, path: "NEAR"},
     {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"}
 ]
 
@@ -485,15 +485,6 @@ var lastTime = 0;
 
 
 
-const raycaster = new THREE.Raycaster();
-const sceneMeshes = new Array();
-var cameraWorldPos = new THREE.Vector3();
-let dir = new THREE.Vector3();
-//let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
-//let distance = cameraWorldPos.distanceTo(pacman.CAMERA_DEFAULT_POS);
-let intersects = [];
-const wallCollision = {front: false, left: false, right: false, back: false}
-
 // Call vital game functions and update HUD
 function computeFrame(time) {
     delta = (time - lastTime) / 1000;
@@ -680,6 +671,7 @@ function gameOver(){
 
 function gameWon(){
     playGameWonSound();
+    document.exitPointerLock();
     gameIsOver = true;
     gamePaused = true;
     levelN++;

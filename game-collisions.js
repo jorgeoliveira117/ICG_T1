@@ -88,7 +88,7 @@ function checkCollisions(){
         }
     }
 }
-
+const wallCollision = {front: false, left: false, right: false, back: false}
 function checkWalls(){
     // Check if Pacman is next to a wall 
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");

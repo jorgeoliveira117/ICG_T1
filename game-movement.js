@@ -115,7 +115,13 @@ function moveGhosts(){
         }
     });
 }
-
+const raycaster = new THREE.Raycaster();
+const sceneMeshes = new Array();
+var cameraWorldPos = new THREE.Vector3();
+let dir = new THREE.Vector3();
+//let cameraDefaultPos = new THREE.Vector3(0, 5, 10);
+//let distance = cameraWorldPos.distanceTo(pacman.CAMERA_DEFAULT_POS);
+let intersects = [];
 function moveCamera(){
     // Adapted from
     // https://sbcode.net/threejs/raycaster2/

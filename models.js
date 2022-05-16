@@ -483,9 +483,9 @@ const models = {
         const fruitMaterial = new THREE.MeshPhongMaterial({ color: color});
         const fruit = new THREE.Mesh(fruitGeometry, fruitMaterial);
         fruit.ROTATION_SPEED = 0.8;
-        fruit.BOB_SPEED = 0.25;
+        fruit.BOB_SPEED = 0.8;
         fruit.BOB_MAX_HEIGHT = 1.8;
-        fruit.BOB_MIN_HEIGHT = 0.8;
+        fruit.BOB_MIN_HEIGHT = 1.2;
         fruit.castShadow = true;
         return fruit;
     },

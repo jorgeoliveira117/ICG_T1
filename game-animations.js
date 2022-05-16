@@ -234,3 +234,18 @@ function animateRendererColor(){
         sceneElements.renderer.SPEED *= -1;
     }
 }
+
+function animateFruits(){
+    fruits.forEach((fruit) =>{
+        fruit.position.y += fruit.BOB_SPEED * delta;
+        fruit.rotation.y += fruit.ROTATION_SPEED * delta;
+        if(fruit.position.y <= fruit.BOB_MIN_HEIGHT){
+            fruit.BOB_SPEED *= -1;
+            fruit.position.y = fruit.BOB_MIN_HEIGHT;
+        }
+        else if(fruit.position.y >= fruit.BOB_MAX_HEIGHT){
+            fruit.BOB_SPEED *= -1;
+            fruit.position.y = fruit.BOB_MAX_HEIGHT;
+        }
+    });
+}

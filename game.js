@@ -25,10 +25,10 @@ var gameIsReady = false;
 var gameIsOver = false;
 const ghosts = [];
 const GHOST_PROPERTIES = [
-    {primary: 0xF80404, secondary: 0xA30404, speed: 1.1},
-    {primary: 0xF8ACF4, secondary: 0xA3ACF4, speed: 1.0},
-    {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95},
-    {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9}
+    {primary: 0xF80404, secondary: 0xA30404, speed: 1.1, path: "SHORTEST"},
+    {primary: 0xF8ACF4, secondary: 0xA3ACF4, speed: 1.0, path: "NEAR"},
+    {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95, path: "RANDOM"},
+    {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"}
 ]
 
 // Map properties
@@ -406,8 +406,7 @@ function loadLevel(levelName){
         ghost.currentBlock = getCoords(ghost.position.x, ghost.position.z);
         //ghost.rotateY(-Math.PI/2);
 
-        if(ghostN == 1)
-            ghost.PATH_FINDING = "SHORTEST";
+        ghost.PATH_FINDING = g.path;
         ghosts.push(ghost);
 
         // Hitbox
@@ -609,7 +608,17 @@ function respawn(){
 }
 
 function killGhost(ghost){
-    
+    // Increase score
+    ghostKills++;
+    addPoints(ghostKills*200);
+    // Ghost died
+    ghost.setDead();
+    // Create Path to spawn point
+    const mapCoords = getCoords(ghost.position.x, ghost.position.z);
+    const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
+    ghost.position.x = blockCenter.x;
+    ghost.position.z = blockCenter.z;
+    ghost.path = [];
 }
 
 function checkWinCondition(){

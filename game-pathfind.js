@@ -154,8 +154,38 @@ function getPathToCorner(x, z){
     return getShortestPathTo(x, z, block.x, block.z);
 }
 
-function getPathToNear(x, z, destX, destZ, minDistance){
+const nearDirections = [
+    {x: 1, z: 0},
+    {x: -1, z: 0},
+    {x: 0, z: 1},
+    {x: 0, z: -1},
+    {x: 0.5, z: 0.5},
+    {x: 0.5, z: -0.5},
+    {x: -0.5, z: 0.5},
+    {x: -0.5, z: -0.5},
+];
+function getPathToNear(x, z, destX, destZ, n){
+    // gets a path to a block with ~n distance to the destination
+    var foundBlock = false;
+    const directionsToSearch = [... nearDirections];
+    const destBlock = getCoords(destX, destZ);
+    while(!foundBlock && directionsToSearch.length > 0){
+        const i = Math.floor(Math.random() * directionsToSearch.length);
+        const dir = directionsToSearch[i];
+        const newX = destBlock.x + Math.floor(n * dir.x);
+        const newZ = destBlock.z + Math.floor(n * dir.z);
+        if( newX >= 0  && newX < levelWidth
+            && newZ >= 0  && newZ < levelHeight){
+            const block = getClosestBlockTo(newX, newZ);
+            const blockCenter = getBlockCenter(block.x, block.z);
+            return getShortestPathTo(x, z, blockCenter.x, blockCenter.z);
+        }else{
+            directionsToSearch.splice(i, 1);
+        }
+    }
 
+    // Couldn't find a block (Not going to happen in normal conditions)
+    return [];
 }
 
 function getClosestBlockTo(x, z){

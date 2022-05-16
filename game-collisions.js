@@ -20,17 +20,7 @@ function checkCollisions(){
         if(pacmanHitbox.intersectsBox(ghostHitbox)){
             if(!ghost.isDead){
                 if(ghost.isScared){
-                    // Increase score
-                    ghostKills++;
-                    addPoints(ghostKills*200);
-                    // Ghost died
-                    ghost.setDead();
-                    // Create Path to spawn point
-                    const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-                    const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
-                    ghost.position.x = blockCenter.x;
-                    ghost.position.z = blockCenter.z;
-                    ghost.path = [];
+                    killGhost(ghost);
                 }else{
                     if(isAlive){
                         // Pacman died

@@ -40,7 +40,7 @@ function checkCollisions(){
             const point = sceneElements.sceneGraph.getObjectByName(pointName);
             sceneElements.sceneGraph.remove(point);
             pointHitboxes.splice(i,1);
-            addPoints(10);
+            addPoints(POINT_SCORE);
             checkWinCondition();
             return;
         }
@@ -60,7 +60,7 @@ function checkCollisions(){
                     break;
                 }
             }
-            addPoints(50);
+            addPoints(POWERUP_SCORE);
             if(!checkWinCondition())
                 activatePowerUp();
             return;
@@ -77,7 +77,7 @@ function checkCollisions(){
                     sceneElements.sceneGraph.remove(fruit);
                     fruits.splice(k, 1);
                     fruitHitboxes.splice(i,1);
-                    addPoints(200);
+                    addPoints(FRUIT_SCORE);
                     nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
                     return;
                 }

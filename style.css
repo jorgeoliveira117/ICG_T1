@@ -77,10 +77,12 @@ body {
 .btn{
 	border-radius: 0px;
 }
+.form-control{
+	border-radius: 0px;
+}
 
 .form-check{
 	font-size: 80%;
-
 }
 
 .w-100  {

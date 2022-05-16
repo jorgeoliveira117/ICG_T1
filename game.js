@@ -67,6 +67,11 @@ const GHOST_SPEED_MODIFIER = 0.1;
 const FRUIT_SPAWN_INTERVAL = 20 * 1000;
 var nextFruitSpawn = 0;
 
+const POINT_SCORE = 10;
+const POWERUP_SCORE = 50;
+const FRUIT_SCORE = 200;
+
+
 const PORTAL_COOLDOWN = 5000;
 var portalCooldown = 0;
 //const POWERUP_DURATION = 15 * 1000;
@@ -93,6 +98,7 @@ var deathTimer = 0;
 // Settings
 var dynamicCamera = true;
 var mouseRotation = true;
+var sensitivityX = 0.005;
 
 
 // Functions are called
@@ -126,6 +132,13 @@ document.getElementById('dynamic-camera').addEventListener('change', (event) => 
 document.getElementById('mouse-rotation').addEventListener('change', (event) => {
   toggleMouseRotation(event);
 })
+
+"change mousewheel keyup keydown".split(" ").forEach( (e) => {
+    document.getElementById('sensitivity').addEventListener(e, (event) => {
+        changeSensitivity(event);
+    })
+})
+
 //To keep track of the keyboard - WASD
 var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
 var mouseDown = false, mouseUp = true;
@@ -442,7 +455,6 @@ function loadLevel(levelName){
 
 var mouseX = 0;
 var mouseY = 0;
-var sensitivityX = 0.005;
 var axisVertical = new THREE.Vector3(0, 1, 0);
 var axis = new THREE.Vector3(0, 0, 1);
 
@@ -804,4 +816,10 @@ function toggleMouseRotation(event){
         mouseRotation = true;
     else
         mouseRotation = false;
+}
+console.log(sensitivityX);
+
+function changeSensitivity(event){
+    sensitivityX = event.target.value / 10000;
+    console.log(sensitivityX);
 }

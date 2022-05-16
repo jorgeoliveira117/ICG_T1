@@ -64,7 +64,7 @@ const POSITION_ERROR = 0.1;
 const PACMAN_SPEED_MODIFIER = 0.1;
 const GHOST_SPEED_MODIFIER = 0.1;
 
-const FRUIT_SPAWN_INTERVAL = 2 * 1000;
+const FRUIT_SPAWN_INTERVAL = 30 * 1000;
 var nextFruitSpawn = 0;
 
 const POINT_SCORE = 10;
@@ -527,7 +527,7 @@ function computeFrame(time) {
         animateGhosts();
         animatePortals();
         animateFruits();
-        
+
         if(dynamicCamera)
             moveCamera();
         document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);

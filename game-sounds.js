@@ -44,6 +44,13 @@ const respawnSoundsLocation = [
     "sounds/respawn/sfx_sounds_powerup13.wav",
     "sounds/respawn/sfx_sounds_powerup14.wav",
 ];
+const gameLostSoundsLocation = [
+    "sounds/gamelost/sfx_sound_shutdown1.wav",
+    "sounds/gamelost/sfx_sound_shutdown2.wav",
+];
+const gameWonSoundsLocation = [
+    "sounds/gamewon/sfx_sound_neutral2.wav",
+];
 
 
 const portalSounds = [];
@@ -53,6 +60,8 @@ const ghostSounds = [];
 const pointSounds = [];
 const powerupSounds = [];
 const fruitSpawnSounds = [];
+const gameLostSounds = [];
+const gameWonSounds = [];
 
 
 function loadSounds(){
@@ -60,9 +69,11 @@ function loadSounds(){
     pacmanDeathSoundsLocation.forEach((ps) => pacmanSounds.push(new Audio(ps)));
     ghostDeathSoundsLocation.forEach((ps) => ghostSounds.push(new Audio(ps)));
     powerupSoundsLocation.forEach((ps) => powerupSounds.push(new Audio(ps)));
+    respawnSoundsLocation.forEach((ps) => respawnSounds.push(new Audio(ps)));
+    gameLostSoundsLocation.forEach((ps) => gameLostSounds.push(new Audio(ps)));
+    gameWonSoundsLocation.forEach((ps) => gameWonSounds.push(new Audio(ps)));
     pointSoundsLocation.forEach((ps) => pointSounds.push(new Audio(ps)));
     fruitSpawnSoundsLocation.forEach((ps) => fruitSpawnSounds.push(new Audio(ps)));
-    respawnSoundsLocation.forEach((ps) => respawnSounds.push(new Audio(ps)));
 }
 
 function playPortalSound(){
@@ -102,6 +113,18 @@ function playPacmanDeadSound(){
 }
 function playRespawnSound(){
     const audio = respawnSounds[Math.floor(Math.random() * respawnSounds.length)];
+    audio.volume = soundVolume;
+    audio.play();
+}
+
+function playGameLostSound(){
+    const audio = gameLostSounds[Math.floor(Math.random() * gameLostSounds.length)];
+    audio.volume = soundVolume;
+    audio.play();
+}
+
+function playGameWonSound(){
+    const audio = gameWonSounds[Math.floor(Math.random() * gameWonSounds.length)];
     audio.volume = soundVolume;
     audio.play();
 }

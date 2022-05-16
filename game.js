@@ -670,6 +670,7 @@ function killGhost(ghost){
 
 
 function gameOver(){
+    playGameLostSound();
     document.exitPointerLock();
     gameIsOver = true;
     document.getElementById("game-over").style.visibility = "visible";
@@ -677,6 +678,7 @@ function gameOver(){
 }
 
 function gameWon(){
+    playGameWonSound();
     gameIsOver = true;
     gamePaused = true;
     levelN++;

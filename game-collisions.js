@@ -40,6 +40,7 @@ function checkCollisions(){
             const point = sceneElements.sceneGraph.getObjectByName(pointName);
             sceneElements.sceneGraph.remove(point);
             pointHitboxes.splice(i,1);
+            playPointSound();
             addPoints(POINT_SCORE);
             checkWinCondition();
             return;
@@ -60,6 +61,7 @@ function checkCollisions(){
                     break;
                 }
             }
+            playPowerUpSound();
             addPoints(POWERUP_SCORE);
             if(!checkWinCondition())
                 activatePowerUp();
@@ -77,6 +79,7 @@ function checkCollisions(){
                     sceneElements.sceneGraph.remove(fruit);
                     fruits.splice(k, 1);
                     fruitHitboxes.splice(i,1);
+                    playPointSound();
                     addPoints(FRUIT_SCORE);
                     nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
                     return;
@@ -164,6 +167,7 @@ function checkPacmanBounds(){
                 const portalCoords = getBlockCenter(portal.coordX, portal.coordZ);
                 pacman.position.x = portalCoords.x;
                 pacman.position.z = portalCoords.z;
+                playPortalSound();
                 portalCooldown = Date.now() + PORTAL_COOLDOWN;
             }
         })

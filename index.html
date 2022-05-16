@@ -26,6 +26,7 @@
 	<script type="text/javascript" src="game-collisions.js" defer></script>
 	<script type="text/javascript" src="game-movement.js" defer></script>
 	<script type="text/javascript" src="game-animations.js" defer></script>
+	<script type="text/javascript" src="game-sounds.js" defer></script>
 
 	<script type="text/javascript" src="game.js" defer></script>
 	
@@ -173,10 +174,14 @@
 					<h4>Left/Right Arrows - Rotate</h4>
 					<h4>P - Pause</h4>
 				</div>
-				<hr>
+			</div>
+		</div>
+		<div class="side-menu2" id="side-menu2" style="visibility: visible;">
+			<div class="container" style="padding-top: 5%">
 				<div class="row" style="text-align: center;"> 
 					<h3>Settings</h3>
 				</div>
+				<hr>
 				<div class="form-check">
 					<label class="form-check-label" for="flexCheckDefault">
 						Dynamic Camera
@@ -189,11 +194,12 @@
 					</label>
 					<input id="mouse-rotation" checked class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
 				</div>
-				<div class="form-group">
-					<label for="sensitivity">Sensitivity</label>
+				<div>
+					<label>Sensitivity</label>
 					<input type="number" min="1" max ="100" class="form-control" id="sensitivity" placeholder="Enter Sensitivity" value="50">
 				</div>
-				<br>
+				<label id="volume-label" for="volume" class="form-label">Volume: 25</label>
+				<input type="range" class="form-range" id="volume" min="0" max="1" step="0.05" value="0.25">
 			</div>
 		</div>
 	</div>

@@ -99,12 +99,13 @@ var deathTimer = 0;
 var dynamicCamera = true;
 var mouseRotation = true;
 var sensitivityX = 0.005;
-
+var soundVolume = 0.25;
 
 // Functions are called
 //  1. Initialize an empty scene
 //  2. Animate
 helper.initEmptyScene(sceneElements);
+loadSounds();
 requestAnimationFrame(computeFrame);
 
 // HANDLING EVENTS
@@ -131,6 +132,9 @@ document.getElementById('dynamic-camera').addEventListener('change', (event) => 
 })
 document.getElementById('mouse-rotation').addEventListener('change', (event) => {
   toggleMouseRotation(event);
+})
+document.getElementById('volume').addEventListener('change', (event) => {
+  changeVolume(event);
 })
 
 "change mousewheel keyup keydown".split(" ").forEach( (e) => {
@@ -608,6 +612,7 @@ function checkFruitSpawn(){
             // Hitbox
             const fruitHitbox = new THREE.Sphere(fruit.position, 0.25);
             fruitHitboxes.push(fruitHitbox);
+            playFruitSpawnSound();
             break;
         }
     }    
@@ -615,6 +620,7 @@ function checkFruitSpawn(){
 }
 
 function killPacman(){
+    playPacmanDeadSound();
     powerUpLimit = 0;
     isAlive = false;
     gamePaused = true;
@@ -643,10 +649,12 @@ function respawn(){
     isAlive = true;
     gamePaused = false;
     pacman.position.copy(pacmanSpawnPoint);
+    playRespawnSound();
     document.getElementById("dead-menu").style.visibility = "hidden";
 }
 
 function killGhost(ghost){
+    playGhostDeadSound();
     // Increase score
     ghostKills++;
     addPoints(ghostKills*200);
@@ -745,8 +753,8 @@ function startGame(){
     document.getElementById("lives").innerHTML = "Lives: " + lives;
     document.getElementById("lives").style.color = "aliceblue";
     gamePaused = false;
-    
     element.requestPointerLock();
+    playRespawnSound();
 }
 
 function pauseGame(){
@@ -785,12 +793,14 @@ function leaveGame(){
     document.getElementById("lives").innerHTML = "";
     document.getElementById("main-menu").style.visibility = "visible";
     document.getElementById("side-menu").style.visibility = "visible";
+    document.getElementById("side-menu2").style.visibility = "visible";
 }
 
 function loadGameLevel(){
     const baseName = "map-";
     document.getElementById("main-menu").style.visibility = "hidden";
     document.getElementById("side-menu").style.visibility = "hidden";
+    document.getElementById("side-menu2").style.visibility = "hidden";
     for(var i = 1; i <= levels.howManyLevels(); i++){
         if(document.getElementById(baseName + i).classList.contains("active")){
             loadLevel(levels.getLevelNameByNum(i));
@@ -817,9 +827,13 @@ function toggleMouseRotation(event){
     else
         mouseRotation = false;
 }
-console.log(sensitivityX);
 
 function changeSensitivity(event){
     sensitivityX = event.target.value / 10000;
-    console.log(sensitivityX);
+}
+
+function changeVolume(event){
+    soundVolume = event.target.value;
+    document.getElementById("volume-label").innerHTML = "Volume: " + Math.floor(soundVolume * 100);
+  
 }

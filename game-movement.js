@@ -103,6 +103,10 @@ function moveGhosts(){
                     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
                     const path = getPathToNear(ghost.position.x, ghost.position.z, pacman.position.x, pacman.position.z, 5);
                     ghost.path = path;
+                }else if(ghost.PATH_FINDING == "CORRIDOR"){
+                    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
+                    const path = getPathToEndOfCorridor(ghost.position.x, ghost.position.z, pacman.position.x, pacman.position.z);
+                    ghost.path = path;
                 }else if(ghost.PATH_FINDING == "RANDOM"){
                     const path = getRandomPath(ghost.position.x, ghost.position.z);
                     ghost.path = path;

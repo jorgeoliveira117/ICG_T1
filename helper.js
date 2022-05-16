@@ -55,7 +55,7 @@ const helper = {
         // Control for the camera
         // ************************** //
         sceneElements.control = new THREE.OrbitControls(camera, renderer.domElement);
-        sceneElements.control.enabled = false;
+        //sceneElements.control.enabled = false;
         //sceneElements.control.screenSpacePanning = true;
     },
 

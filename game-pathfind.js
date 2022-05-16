@@ -164,12 +164,19 @@ const nearDirections = [
     {x: -0.5, z: 0.5},
     {x: -0.5, z: -0.5},
 ];
+/**
+ * Gets a path to a block with ~n distance to the destination
+ * @param  {[float]} x X coordinate of the source's position
+ * @param  {[float]} z Z coordinate of the source's position
+ * @param  {[float]} destX X coordinate of the destination's position
+ * @param  {[float]} destZ Z coordinate of the destination's position
+ * @param  {[int]} n Distance to the destination
+ * @return {[array]}      [Array of directions from source to the block found]
+ */
 function getPathToNear(x, z, destX, destZ, n){
-    // gets a path to a block with ~n distance to the destination
-    var foundBlock = false;
     const directionsToSearch = [... nearDirections];
     const destBlock = getCoords(destX, destZ);
-    while(!foundBlock && directionsToSearch.length > 0){
+    while(directionsToSearch.length > 0){
         const i = Math.floor(Math.random() * directionsToSearch.length);
         const dir = directionsToSearch[i];
         const newX = destBlock.x + Math.floor(n * dir.x);
@@ -178,6 +185,43 @@ function getPathToNear(x, z, destX, destZ, n){
             && newZ >= 0  && newZ < levelHeight){
             const block = getClosestBlockTo(newX, newZ);
             const blockCenter = getBlockCenter(block.x, block.z);
+            return getShortestPathTo(x, z, blockCenter.x, blockCenter.z);
+        }else{
+            directionsToSearch.splice(i, 1);
+        }
+    }
+
+    // Couldn't find a block (Not going to happen in normal conditions)
+    return [];
+}
+
+function getPathToEndOfCorridor(x, z, destX, destZ){
+    // Finds a path from (x,z) to the end of a corridor where (destX, destZ) is
+    const directionsToSearch = [nearDirections[0], nearDirections[1], nearDirections[2], nearDirections[3]];
+    const destBlock = getCoords(destX, destZ);
+    while(directionsToSearch.length > 0){
+        const i = Math.floor(Math.random() * directionsToSearch.length);
+        const dir = directionsToSearch[i];
+        const newX = destBlock.x + dir.x;
+        const newZ = destBlock.z + dir.z;
+        if( newX >= 0  && newX < levelWidth
+            && newZ >= 0  && newZ < levelHeight
+            && level[newX][newZ] != "#"){
+            // Found an available path, find it's end
+            const endBlock = {x: newX, z: newZ}
+            var foundWall = false;
+            while(!foundWall){
+                const coords = {x: endBlock.x + dir.x, z: endBlock.z + dir.z}
+                if( coords.x < 0 || coords.x >= levelWidth 
+                    || coords.z < 0 || coords.z >= levelHeight
+                    || level[coords.x][coords.z] == "#")
+                    foundWall = true;
+                else{
+                    endBlock.x = coords.x; 
+                    endBlock.z = coords.z; 
+                }
+            }
+            const blockCenter = getBlockCenter(endBlock.x, endBlock.z);
             return getShortestPathTo(x, z, blockCenter.x, blockCenter.z);
         }else{
             directionsToSearch.splice(i, 1);

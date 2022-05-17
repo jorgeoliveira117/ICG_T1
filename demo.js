@@ -29,6 +29,8 @@ const GHOST_PROPERTIES = [
     {primary: 0xF80404, secondary: 0xA30404, speed: 1.1, path: "SHORTEST"},
     {primary: 0xF8ACF4, secondary: 0xA3ACF4, speed: 1.0, path: "NEAR"},
     {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95, path: "CORRIDOR"},
+    {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"},
+    {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"},
     {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"}
 ]
 
@@ -53,18 +55,7 @@ var nextLightCheck = 0;
 var closestLightName = "";
 
 // Movement properties
-const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
-const MOVE_DOWN = { movement: "DOWN", xBias: 0, zBias: -1, rotationAngle: -Math.PI};
-const MOVE_LEFT = { movement: "LEFT", xBias: 1, zBias: 0, rotationAngle: Math.PI / 2};
-const MOVE_RIGHT = { movement: "RIGHT", xBias: -1, zBias: 0, rotationAngle: -Math.PI / 2};
-const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
-
-const ROTATION_ERROR = Math.PI/100;
-const POSITION_ERROR = 0.1;
-
 // Game values
-const PACMAN_SPEED_MODIFIER = 0.1;
-const GHOST_SPEED_MODIFIER = 0.1;
 
 const FRUIT_SPAWN_INTERVAL = 30 * 1000;
 var nextFruitSpawn = 0;
@@ -132,6 +123,8 @@ loadLevel("level_1");
 
 cameraGroup.add(sceneElements.camera);
 sceneElements.sceneGraph.add(cameraGroup);
+cameraGroup.position.set(levelWidthCoord/ 2, 5, levelHeightCoord + 40);
+
 requestAnimationFrame(computeFrame);
 
 // HANDLING EVENTS
@@ -141,20 +134,15 @@ requestAnimationFrame(computeFrame);
 window.addEventListener('resize', resizeWindow);
 
 //To keep track of the keyboard - WASD
-var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
+var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight = false, shift = false, space = false;
 var mouseDown = false, mouseUp = true;
 
 // Ask the browser to lock the pointer
-//
-//document.exitPointerLock();
 
 
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
 document.addEventListener("mousemove", handleMouseMove, false);
-//document.onmousemove = handleMouseMove;
-
-
 
 // Update render image size and camera aspect when the window is resized
 function resizeWindow(eventParam) {
@@ -170,14 +158,10 @@ function resizeWindow(eventParam) {
 //////////////////////////////////////////////////////////////////
 
 function loadLevel(levelName){
-
     gameIsReady = false;
-    
     levelMapName = levelName;
-    
     // Calculate how many blocks the map has
     const levelMap = levels.getLevel(levelName)
-
     // Read Map and format it
     var i = 0;
     var k = 0;
@@ -190,28 +174,23 @@ function loadLevel(levelName){
         }
         level.push(line);
     }
-
     levelWidth = level[0].length;
     levelHeight = level.length;
     levelWidthCoord = levelWidth * BLOCK_SIZE;
     levelHeightCoord = levelHeight * BLOCK_SIZE;
-
     // ************************** //
     // Create ground
     // ************************** //
-    const ground = models.createGround(levelWidthCoord, levelHeightCoord);
-    
+    const ground = models.createGround(levelWidthCoord*2, levelHeightCoord*2);
     // Change orientation of the ground using rotation
     ground.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
     // Set shadow property
     ground.receiveShadow = true;
     ground.position.set(levelWidthCoord / 2, 0, levelHeightCoord / 2);
     sceneElements.sceneGraph.add(ground);
-
     // ************************** //
     // Illumination
     // ************************** //
-
     // Ambient light
     const ambientLight = new THREE.AmbientLight('rgb(255, 255, 255)', 0.6);
     ambientLight.name = "ambientLight";
@@ -219,22 +198,18 @@ function loadLevel(levelName){
     ambientLight.MIN_INTENSITY = 0.6;
     ambientLight.SPEED = 0.4;
     sceneElements.sceneGraph.add(ambientLight);
-
     // PointLight (with shadows)
     const lightCenter = new THREE.PointLight('rgb(255, 255, 255)', 1, 1000);
     lightCenter.position.set(levelWidthCoord / 2, 200, levelHeightCoord / 2);
     sceneElements.sceneGraph.add(lightCenter);
     lightCenter.name = "light_center";
-
     // Setup shadow properties for the PointLight
     lightCenter.castShadow = true;
     lightCenter.shadow.mapSize.width = 2048;
     lightCenter.shadow.mapSize.height = 2048;
- 
     // ************************** //
     // Generate Map
     // ************************** //
-
     var char = 0;
     var wallN = 0;
     var pointN = 0;
@@ -245,15 +220,15 @@ function loadLevel(levelName){
         for(char = 0; char < level[0].length; char++){
             switch(level[line][char]){
                 case " ":
-                    // Space
                 case "-":
-                    // Unreachable space
+                case "P":
+                case "G":
+                case "F":
                     break;
                 case "#":
                     const wall = models.createWall(wallN, BLOCK_SIZE);
                     wallN++;
                     wall.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 2, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
-                    wallMeshes.push(wall);
                     sceneElements.sceneGraph.add(wall);
                     break;
                 case ".":
@@ -262,10 +237,6 @@ function loadLevel(levelName){
                     pointN++;
                     sceneElements.sceneGraph.add(point);
                     point.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
-                    // Hitbox
-                    const pointHitbox = new THREE.Sphere(point.position, 0.25);
-                    pointHitbox.name = point.name + "_hitbox";
-                    pointHitboxes.push(pointHitbox);
                     break;
                 case "o":
                     // Power Up
@@ -274,84 +245,64 @@ function loadLevel(levelName){
                     powerUp.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     sceneElements.sceneGraph.add(powerUp);
                     // Hitbox
-                    const powerUpHitbox = new THREE.Sphere(powerUp.position, 0.25);
-                    powerUpHitbox.name = powerUp.name + "_hitbox";
-                    powerUpHitboxes.push(powerUpHitbox);
-                    lightSources.push({light: powerUp, position: powerUp.position});
-                    break;
-                case "P":
-                    // Pacman Spawn
-                    pacmanSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
-                    break;
-                case "G":
-                    // Ghost Spawn
-                    ghostSpawnPoint.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
-                    break;
-                case "F":
-                    // Fruit
-                    fruitLocations.push(new THREE.Vector3(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 1.5, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2));
                     break;
                 default:
                     // Portal
-                    portals.push({num: level[line][char], coordX: char, coordZ: line});
-                    const portal = models.createPortal(portalsN, BLOCK_SIZE);
+                    const portal = models.createPortal(2, BLOCK_SIZE);
                     portalsN++;
                     portal.position.set(levelWidthCoord - char*BLOCK_SIZE - BLOCK_SIZE/2, 2, levelHeightCoord - line*BLOCK_SIZE - BLOCK_SIZE/2);
                     sceneElements.sceneGraph.add(portal);
-                    lightSources.push({light: portal, position: portal.position});
                     break;
             }
         }
     }
-    
     // ************************** //
     // Create Pacman
     // ************************** //
     const pacman = models.createPacman(sceneElements.freeCamera);
-    pacman.position.copy(pacmanSpawnPoint);
-    pacman.rotation.y += Math.PI/2;
-    pacman.MOV_SPEED_X *= (1 + levelN * GHOST_SPEED_MODIFIER);
-    pacman.MOV_SPEED_Z *= (1 + levelN * GHOST_SPEED_MODIFIER);
+    pacman.position.set(levelWidthCoord/2 + 18, 2, levelHeightCoord + 20);
+    pacman.rotation.y = Math.PI/2;
     sceneElements.sceneGraph.add(pacman);
-
-    //pacman.add(sceneElements.camera);
-    // Hitbox
-    pacmanHitbox.set(pacman.position, pacman.RADIUS);
-
     // ************************** //
     // Create Ghosts
     // ************************** //
     GHOST_PROPERTIES.forEach(g => {
         const ghost = models.createGhost(ghostN, g.primary, g.secondary);
-        ghost.MOV_SPEED_X *= g.speed * (1 + levelN * GHOST_SPEED_MODIFIER);
-        ghost.MOV_SPEED_Z *= g.speed * (1 + levelN * GHOST_SPEED_MODIFIER);
         ghostN++;
         sceneElements.sceneGraph.add(ghost);
-        
-        //ghost.position.copy(pacmanSpawnPoint);
-
-        ghost.position.copy(ghostSpawnPoint);
-        ghost.translateX(0.2);
-
-        ghost.currentBlock = getCoords(ghost.position.x, ghost.position.z);
-        //ghost.rotateY(-Math.PI/2);
-
-        ghost.PATH_FINDING = g.path;
+        ghost.position.set(levelWidthCoord/2, 2, levelHeightCoord + 20);
+        ghost.translateX(ghostN*2);
         ghosts.push(ghost);
-
-        // Hitbox
-        const ghostHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-        ghostHitbox.name = ghost.name + "_hitbox";
-        ghostHitbox.setFromObject(ghost);
-        ghostHitboxes.push(ghostHitbox);
     });
-
+    ghosts[ghosts.length-2].setScared();
+    ghosts[ghosts.length-1].setDead();
     
+    const point = models.createPoint(1000);
+    point.position.copy(ghosts[0].position);
+    point.translateX(-10);
+    sceneElements.sceneGraph.add(point);
+    const powerup = models.createPowerUp(1000);
+    powerup.position.copy(point.position);
+    powerup.translateX(-2);
+    powerup.turnLightOn();
+    sceneElements.sceneGraph.add(powerup);
+    const fruit = models.createFruit();
+    fruit.position.copy(powerup.position);
+    fruit.translateX(-2);
+    fruits.push(fruit);
+    sceneElements.sceneGraph.add(fruit);
+
+    const portal = models.createPortal(0, BLOCK_SIZE);
+    portal.position.copy(fruit.position);
+    portal.translateX(-8);
+    sceneElements.sceneGraph.add(portal);
+    portal.turnLightOn();
+    portals.push(portal);
+    totalPortals++;
 }
 
 // Displacement value
 var delta;
-var dispX = 10, dispZ = 10;
 var lastTime = 0;
 
 
@@ -364,15 +315,11 @@ function computeFrame(time) {
         document.exitPointerLock();
     }
     moveCamera();
+    animatePacman();
+    animateGhosts();
+    animatePortals();
+    animateFruits();
     /*
-    if(!isAlive && !gameIsOver){
-        document.getElementById("dead-timer").innerHTML = "Respawning in " + (Math.floor((deathTimer - Date.now())/1000) + 1) + "..."  ;
-        if(deathTimer < Date.now())
-            respawn();
-    }
-
-    
-
     if(gamePaused && powerUpLimit >= Date.now())
         powerUpLimit += delta * 1000;
 
@@ -418,14 +365,12 @@ function handleMouseMove(e) {
 
     var movementX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
     var movementY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
-    cameraGroup.rotateX(-movementY * sensitivityY);
-    cameraGroup.rotateOnAxis(axisVertical, -movementX * sensitivityX);
+    //cameraGroup.rotation.z+= -movementY * sensitivityY;
+    //cameraGroup.rotateOnAxis(axisVertical, -movementX * sensitivityX);
 }
-
 function focusWindow(){
-    element.requestPointerLock();
+    //element.requestPointerLock();
 }
-
 function onDocumentKeyDown(event) {
     switch (event.keyCode) {
         case 68: //d
@@ -439,6 +384,12 @@ function onDocumentKeyDown(event) {
             break;
         case 87: //w
             keyW = true;
+            break;
+        case 16: //shift
+            shift = true;
+            break;
+        case 32: //space
+            space = true;
             break;
     }
 }
@@ -456,16 +407,50 @@ function onDocumentKeyUp(event) {
         case 87: //w
             keyW = false;
             break;
+        case 16: //shift
+            shift = false;
+            break;
+        case 32: //space
+            space = false;
+            break;
     }
 }
-
 function moveCamera(){
-    if (keyD)
+    //usar angulo da camara
+    //cameraGroup.rotation.y = sceneElements.camera.rotation.y;
+    //sceneElements.camera.rotation.set(0,0,0);
+
+    var position = new THREE.Vector3();
+    var quaternion = new THREE.Quaternion();
+    var scale = new THREE.Vector3();
+
+    sceneElements.camera.matrixWorld.decompose( position, quaternion, scale );
+    const y = quaternion.y;
+    // Front = 0 esq 0.688 dir -0.688 tras 0.97
+
+    if (keyD){
         cameraGroup.translateX(25 * delta);
-    if (keyW)
-        cameraGroup.translateZ(-25 * delta);
-    if (keyA)
+
+    }
+    if (keyW){
+        cameraGroup.translateZ(-25 * delta * (1 - y));
+
+    }
+    if (keyA){
         cameraGroup.translateX(-25 * delta);
-    if (keyS)
+
+    }
+    if (keyS){
         cameraGroup.translateZ(25 * delta);
+
+    }
+    if (shift){
+        cameraGroup.translateY(-25 * delta);
+
+    }
+    if (space){
+        cameraGroup.translateY(25 * delta);
+
+    }
+
 }

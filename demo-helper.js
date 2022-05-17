@@ -22,6 +22,11 @@ const helper = {
         // ************************** //
         const freeCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
         sceneElements.freeCamera = camera;
+        const rectGeo = new THREE.BoxGeometry( 1, 1, 2 );
+        const rectMat = new THREE.MeshToonMaterial( {color: 0x1d1957} );
+
+        const rect = new THREE.Mesh( rectGeo, rectMat );
+        freeCamera.add(rect);
 
         // *********************************** //
         // Create renderer (with shadow map)
@@ -50,7 +55,7 @@ const helper = {
         // Control for the camera
         // ************************** //
         sceneElements.control = new THREE.OrbitControls(camera, renderer.domElement);
-        sceneElements.control.enabled = false;
+        //sceneElements.control.enabled = false;
         //sceneElements.control.screenSpacePanning = true;
     },
 

@@ -4,9 +4,14 @@
 
 // This module requires game.js
 
+/**
+ * Finds adjacent walkable blocks from the source
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @return {[options]} [Array of options from source]
+ */
 function findAdjacentBlocks(x, z){
     const options = [];
-    // Check adjacent nodes
     if(x > 0 && level[z][x-1] != "#")
         options.push({x: -1, z: 0, name: "LEFT"});
     if(x + 1 < levelWidth && level[z][x+1] != "#")
@@ -19,15 +24,19 @@ function findAdjacentBlocks(x, z){
     return options;
 }
 
+/**
+ * Gets a random path from the source to an intersection or corner
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @return {[mapCoords]} [Array of directions from source to the block found]
+ */
 function getRandomPath(x, z){
-
     const ghostPos = getCoords(x, z);
     const options = findAdjacentBlocks(ghostPos.x, ghostPos.z);
     const choice = options[Math.floor(Math.random() * options.length)];
     const coords = {x: ghostPos.x + choice.x, z: ghostPos.z + choice.z};
     const path = [ {x: ghostPos.x, z: ghostPos.z}, {x: coords.x, z: coords.z}];
     var findingPath = true;
-
     // Find a path until next wall
     while(findingPath){
         if(
@@ -42,7 +51,6 @@ function getRandomPath(x, z){
             findingPath = false;
         }
     }
-
     const pathCoords = [];
     pathCoords.push(getBlockCenter(path[0].x, path[0].z));
     // Shorten the path to the next intersection
@@ -55,7 +63,10 @@ function getRandomPath(x, z){
     }
     return pathCoords;
 }
-
+/**
+ * Gets a copy of the Map/Level
+ * @return {[mapBlocks]} [Array of directions from source to the block found]
+ */
 function getMapCopy(){
     var map = [];
     var line = [];
@@ -68,7 +79,14 @@ function getMapCopy(){
     }
     return map;
 }
-
+/**
+ * Gets shortest path to the destination
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @param  {float} destX X coordinate of the destination's position
+ * @param  {float} destZ Z coordinate of the destination's position
+ * @return {[mapCoords]} [Array of directions from source to the block found]
+ */
 function getShortestPathTo(x, z, destX, destZ){
     // Adapted from
     // https://medium.com/@manpreetsingh.16.11.87/shortest-path-in-a-2d-array-java-653921063884
@@ -120,9 +138,14 @@ function getShortestPathTo(x, z, destX, destZ){
     console.log("Couldn't find a path from [" + x + ", " + z + "] to [" + destX + ", " + destZ + "] after searching " + tries + " blocks.");
     return [];
 }
+/**
+ * Gets shortest path to the closest corner
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
 
+ * @return {[mapCoords]} [Array of directions from source to the block found]
+ */
 function getPathToCorner(x, z){
-    // Finds shortest path to the closest corner
     var quarter = "";
     // Find which quarter of the map it is
     if(z > levelHeightCoord / 2)
@@ -166,12 +189,12 @@ const nearDirections = [
 ];
 /**
  * Gets a path to a block with ~n distance to the destination
- * @param  {[float]} x X coordinate of the source's position
- * @param  {[float]} z Z coordinate of the source's position
- * @param  {[float]} destX X coordinate of the destination's position
- * @param  {[float]} destZ Z coordinate of the destination's position
- * @param  {[int]} n Distance to the destination
- * @return {[array]}      [Array of directions from source to the block found]
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @param  {float} destX X coordinate of the destination's position
+ * @param  {float} destZ Z coordinate of the destination's position
+ * @param  {int} n Distance to the destination
+ * @return {[mapCoords]}      [Array of directions from source to the block found]
  */
 function getPathToNear(x, z, destX, destZ, n){
     const directionsToSearch = [... nearDirections];
@@ -194,7 +217,14 @@ function getPathToNear(x, z, destX, destZ, n){
     // Couldn't find a block (Not going to happen in normal conditions)
     return [];
 }
-
+/**
+ * Gets a path to a block that's the end of the corridor from the destination
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @param  {float} destX X coordinate of the destination's position
+ * @param  {float} destZ Z coordinate of the destination's position
+ * @return {[mapCoords]}      [Array of directions from source to the block found]
+ */
 function getPathToEndOfCorridor(x, z, destX, destZ){
     // Finds a path from (x,z) to the end of a corridor where (destX, destZ) is
     const directionsToSearch = [nearDirections[0], nearDirections[1], nearDirections[2], nearDirections[3]];
@@ -206,15 +236,16 @@ function getPathToEndOfCorridor(x, z, destX, destZ){
         const newZ = destBlock.z + dir.z;
         if( newX >= 0  && newX < levelWidth
             && newZ >= 0  && newZ < levelHeight
-            && level[newX][newZ] != "#"){
+            && level[newZ][newX] != "#"){
             // Found an available path, find it's end
+            console.log(dir);
             const endBlock = {x: newX, z: newZ}
             var foundWall = false;
             while(!foundWall){
                 const coords = {x: endBlock.x + dir.x, z: endBlock.z + dir.z}
                 if( coords.x < 0 || coords.x >= levelWidth 
                     || coords.z < 0 || coords.z >= levelHeight
-                    || level[coords.x][coords.z] == "#")
+                    || level[coords.z][coords.x] == "#")
                     foundWall = true;
                 else{
                     endBlock.x = coords.x; 
@@ -231,7 +262,12 @@ function getPathToEndOfCorridor(x, z, destX, destZ){
     // Couldn't find a block (Not going to happen in normal conditions)
     return [];
 }
-
+/**
+ * Gets the nearest walkable block to the source
+ * @param  {float} x X coordinate of the source's position
+ * @param  {float} z Z coordinate of the source's position
+ * @return {{x: int, z: int}} Map coordinates of an empty block
+ */
 function getClosestBlockTo(x, z){
     // returns the closest walkable block to the coordinates
     var map = getMapCopy();
@@ -289,7 +325,11 @@ function getClosestBlockTo(x, z){
     console.log("Couldn't find a walkable block");
     return [];
 }
-
+/**
+ * Generates a path from a node
+ * @param {{x: int, z: int, previous: pathNode}} pathNode X coordinate of the source's position
+ * @return {[mapCoords]} List of World Coordinates with path
+ */
 function generatePath(pathNode){
     // Generates the path from a path node
     const path = [];
@@ -300,7 +340,10 @@ function generatePath(pathNode){
     }
     return path.reverse();
 }
-
+/**
+ * Prints a path from a node
+ * @param {[mapCoords]} pathNode X coordinate of the source's position
+ */
 function printPath(path){
     var pathString = "";
     path.forEach((block) => {

@@ -319,40 +319,11 @@ function computeFrame(time) {
     animateGhosts();
     animatePortals();
     animateFruits();
-    /*
-    if(gamePaused && powerUpLimit >= Date.now())
-        powerUpLimit += delta * 1000;
-
-    if(gameIsReady && !gamePaused && isAlive){
-        gameTimer += delta;
-        movePacman();
-        checkPacmanBounds();
-        checkLights();
-        moveGhosts();
-        checkCollisions();
-        
-        checkPowerUp();
-        checkFruitSpawn();
-
-        animatePacman();
-        animateGhosts();
-        animatePortals();
-        animateFruits();
-
-        if(dynamicCamera)
-            moveCamera();
-        document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
-        
-    }
-    */
-
     sceneElements.camera.lookAt(cameraGroup.position);
     // Rendering
     helper.render(sceneElements);
-
     // Update control of the camera
     sceneElements.control.update();
-
     // Call for the next frame
     requestAnimationFrame(computeFrame);
 }

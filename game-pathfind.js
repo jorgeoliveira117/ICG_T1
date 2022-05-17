@@ -238,7 +238,6 @@ function getPathToEndOfCorridor(x, z, destX, destZ){
             && newZ >= 0  && newZ < levelHeight
             && level[newZ][newX] != "#"){
             // Found an available path, find it's end
-            console.log(dir);
             const endBlock = {x: newX, z: newZ}
             var foundWall = false;
             while(!foundWall){

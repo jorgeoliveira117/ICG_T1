@@ -1,6 +1,6 @@
 "use strict";
 
-// To store the scene graph, and elements usefull to rendering the scene
+// Useful elements to the scene and game
 const sceneElements = {
     sceneGraph: null,
     camera: null,
@@ -9,7 +9,9 @@ const sceneElements = {
     miniCamera: null
 };
 
-// Hitboxes in the game
+// ************************** //
+// Hitboxes
+// ************************** //
 var wallMeshes = []; 
 var portals = [];
 var ghostHitboxes = [];
@@ -20,9 +22,31 @@ var fruits = [];
 var fruitHitboxes = [];
 const pacmanHitbox = new THREE.Sphere();
 
-// Game control properties
+// ************************** //
+// Game Properties
+// ************************** //
+// Game control
 var gameIsReady = false;
 var gameIsOver = false;
+var gamePaused = true;
+// Time variables
+var gameTimer = 0;
+var delta;      // Time since last frame
+var lastTime = 0;
+
+var levelN = 1;
+
+var totalGhostKills = 0;
+var totalPoints = 0;
+var ghostKills = 0;
+var points = 0;
+var isAlive = true;
+var lives = 3;
+
+//To keep track of the keyboard - WASD
+var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
+var mouseDown = false, mouseUp = true;
+
 const ghosts = [];
 const GHOST_PROPERTIES = [
     {primary: 0xF80404, secondary: 0xA30404, speed: 1.1, path: "SHORTEST"},
@@ -30,141 +54,93 @@ const GHOST_PROPERTIES = [
     {primary: 0x08F8F4, secondary: 0x059997, speed: 0.95, path: "CORRIDOR"},
     {primary: 0xFF8E00, secondary: 0xA65D02, speed: 0.9, path: "RANDOM"}
 ]
+// How much the speed changes on each difficulty
+const PACMAN_SPEED_MODIFIER = 0.1;
+const GHOST_SPEED_MODIFIER = 0.1;
+// When the fruit spawns and its "cooldown"
+const FRUIT_SPAWN_INTERVAL = 30 * 1000;
+var nextFruitSpawn = 0;
+// How much every "collectible" gives as score
+const POINT_SCORE = 10;
+const POWERUP_SCORE = 50;
+const FRUIT_SCORE = 200;
+// Portal Cooldown
+const PORTAL_COOLDOWN = 5000;
+var portalCooldown = 0;
+// Power Up properties
+const POWERUP_DURATION = 15 * 1000;
+const POWERUP_SPEED = 1.5;
+var powerUpLimit = 0;
+var poweredUp = false;
+// Death Timer
+var DEATH_TIMER = 5000;
+var deathTimer = 0;
 
-// Map properties
+
+
+// ************************** //
+// Map Properties
+// ************************** //
 const BLOCK_SIZE = 5;
 // Length of the level for X and Z in terms of "blocks"
-// Each block is 5x5 in area
+// aka Length in terms of Map coordinates
 var levelWidth = 0;
 var levelHeight = 0;
-// Length in terms of coordinates
+// Length in terms of World coordinates
 var levelWidthCoord = 0;
 var levelHeightCoord = 0;
 const pacmanSpawnPoint = new THREE.Vector3();
 const ghostSpawnPoint = new THREE.Vector3();
+// array to store the map
 const level = [];
+var levelMapName = "";
 var totalPortals = 0;
-
+// Useful variables that allow the check of near lights
 const lightSources = [];
 const LIGHT_CHECK_DELAY = 200;
 var nextLightCheck = 0;
 var closestLightName = "";
 
-// Movement properties
-const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
-const MOVE_DOWN = { movement: "DOWN", xBias: 0, zBias: -1, rotationAngle: -Math.PI};
-const MOVE_LEFT = { movement: "LEFT", xBias: 1, zBias: 0, rotationAngle: Math.PI / 2};
-const MOVE_RIGHT = { movement: "RIGHT", xBias: -1, zBias: 0, rotationAngle: -Math.PI / 2};
-const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
 
-const ROTATION_ERROR = Math.PI/100;
-const POSITION_ERROR = 0.1;
-
-// Game values
-const PACMAN_SPEED_MODIFIER = 0.1;
-const GHOST_SPEED_MODIFIER = 0.1;
-
-const FRUIT_SPAWN_INTERVAL = 30 * 1000;
-var nextFruitSpawn = 0;
-
-const POINT_SCORE = 10;
-const POWERUP_SCORE = 50;
-const FRUIT_SCORE = 200;
-
-
-const PORTAL_COOLDOWN = 5000;
-var portalCooldown = 0;
-//const POWERUP_DURATION = 15 * 1000;
-const POWERUP_DURATION = 15 * 1000;
-//const POWERUP_SPEED = 1.5;
-const POWERUP_SPEED = 1.5;
-var powerUpLimit = 0;
-var poweredUp = false;
-
-var levelMapName = "";
-var levelN = 1;
-var ghostKills = 0;
-var points = 0;
-var isAlive = true;
-var totalGhostKills = 0;
-var totalPoints = 0;
-var lives = 3;
-
-var gameTimer = 0;
-var gamePaused = true;
-var DEATH_TIMER = 5000;
-var deathTimer = 0;
-
-// Settings
+// ************************** //
+// Game Settings
+// ************************** //
 var dynamicCamera = true;
 var mouseRotation = true;
 var sensitivityX = 0.005;
 var soundVolume = 0.25;
 
-// Functions are called
-//  1. Initialize an empty scene
-//  2. Animate
-helper.initEmptyScene(sceneElements);
-loadSounds();
-requestAnimationFrame(computeFrame);
-
-// HANDLING EVENTS
-
-// Event Listeners
-
-window.addEventListener('resize', resizeWindow);
-
-
-document.getElementById("start-game").onclick = startGame;
-document.getElementById("continue-game").onclick = continueGame;
-document.getElementById("restart-game").onclick = restartGame;
-document.getElementById("next-game").onclick = nextLevel;
-document.getElementById("leave-game").onclick = leaveGame;
-document.getElementById("leave-game-2").onclick = leaveGame;
-document.getElementById("leave-game-3").onclick = leaveGame;
-document.getElementById("leave-game-4").onclick = leaveGame;
-
-
-document.getElementById("load-level").onclick = loadGameLevel;
-
-document.getElementById('dynamic-camera').addEventListener('change', (event) => {
-  toggleDynamicCamera(event);
-})
-document.getElementById('mouse-rotation').addEventListener('change', (event) => {
-  toggleMouseRotation(event);
-})
-document.getElementById('volume').addEventListener('change', (event) => {
-  changeVolume(event);
-})
-
-"change mousewheel keyup keydown".split(" ").forEach( (e) => {
-    document.getElementById('sensitivity').addEventListener(e, (event) => {
-        changeSensitivity(event);
-    })
-})
-
-//To keep track of the keyboard - WASD
-var keyD = false, keyA = false, keyS = false, keyW = false, arrowLeft = false, arrowRight;
-var mouseDown = false, mouseUp = true;
+// Defines the mouse movement
+var axisVertical = new THREE.Vector3(0, 1, 0);
 
 const element = document.querySelector("#Tag3DScene");
 
 
+// ************************** //
+// Pointer lock
+// ************************** //
+// Adapted from
 // https://www.html5rocks.com/en/tutorials/pointerlock/intro/
 element.requestPointerLock = element.requestPointerLock ||
 			     element.mozRequestPointerLock ||
 			     element.webkitRequestPointerLock;
-
 
 // Ask the browser to release the pointer
 document.exitPointerLock = document.exitPointerLock ||
 			   document.mozExitPointerLock ||
 			   document.webkitExitPointerLock;
 
-// Ask the browser to lock the pointer
-//
-//document.exitPointerLock();
+//  1. Initialize an empty scene
+//  2. Load all sounds to memory
+//  3. Animate
+helper.initEmptyScene(sceneElements);
+loadSounds();
+requestAnimationFrame(computeFrame);
 
+// ************************** //
+// Event Listeners
+// ************************** //
+window.addEventListener('resize', resizeWindow);
 
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
@@ -174,18 +150,15 @@ document.addEventListener("mouseup", onMouseUp);
 document.addEventListener("mousemove", handleMouseMove, false);
 document.onmousemove = handleMouseMove;
 
-
-
 // Update render image size and camera aspect when the window is resized
 function resizeWindow(eventParam) {
     const width = window.innerWidth;
     const height = window.innerHeight;
-
     sceneElements.camera.aspect = width / height;
     sceneElements.camera.updateProjectionMatrix();
-
     sceneElements.renderer.setSize(width, height);
 }
+
 function onDocumentKeyDown(event) {
     switch (event.keyCode) {
         case 68: //d
@@ -246,13 +219,10 @@ function onMouseUp(){
     mouseUp = true;
     mouseDown = false;
 }
-//////////////////////////////////////////////////////////////////
-
 
 function loadLevel(levelName){
 
     gameIsReady = false;
-    
     levelMapName = levelName;
     
     clearGame();
@@ -437,6 +407,8 @@ function loadLevel(levelName){
 
     });
 
+    // Set some control variables
+
     totalPortals = portalsN;
 
     nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
@@ -457,10 +429,6 @@ function loadLevel(levelName){
 }
 
 
-var mouseX = 0;
-var mouseY = 0;
-var axisVertical = new THREE.Vector3(0, 1, 0);
-var axis = new THREE.Vector3(0, 0, 1);
 
 // Adapted from how Unity Engine works for a third person camera
 function handleMouseMove(e) {
@@ -475,15 +443,6 @@ function handleMouseMove(e) {
     if(mouseRotation)
         pacman.rotateOnAxis(axisVertical, -movementX * sensitivityX);
 }
-
-
-// Displacement value
-
-var delta;
-var dispX = 10, dispZ = 10;
-var lastTime = 0;
-
-
 
 // Call vital game functions and update HUD
 function computeFrame(time) {
@@ -502,6 +461,8 @@ function computeFrame(time) {
 
     if(gamePaused && powerUpLimit >= Date.now())
         powerUpLimit += delta * 1000;
+    if(gamePaused && nextFruitSpawn >= Date.now())
+        nextFruitSpawn += delta * 1000;
 
     if(gameIsReady && !gamePaused && isAlive){
         gameTimer += delta;
@@ -522,7 +483,6 @@ function computeFrame(time) {
         if(dynamicCamera)
             moveCamera();
         document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
-        
     }
 
     // Rendering
@@ -533,302 +493,4 @@ function computeFrame(time) {
 
     // Call for the next frame
     requestAnimationFrame(computeFrame);
-}
-
-// ************************** //
-// Game Events
-// ************************** //
-
-function checkPowerUp(){
-    if(!poweredUp)
-        return;
-
-    if(Date.now() > powerUpLimit){
-        poweredUp = false;
-
-        // Decrease Pacman's speed
-        const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-        pacman.MOV_SPEED_X /= POWERUP_SPEED;
-        pacman.MOV_SPEED_Z /= POWERUP_SPEED;
-
-        // Reset Lights
-        sceneElements.renderer.setClearColor('rgb(0, 150, 255)', 0.4);
-        const ambientLight = sceneElements.sceneGraph.getObjectByName("ambientLight");
-        ambientLight.intensity = ambientLight.MIN_INTENSITY;
-
-        ghosts.forEach((ghost) => {
-            if(ghost.isScared && !ghost.isDead)
-                ghost.setNotScared();
-            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-            const path = getBlockCenter(mapCoords.x, mapCoords.z)
-            ghost.path = [path];
-        })
-        document.getElementById("powerup").innerHTML = "";
-        return;
-    }
-
-    const remainingPowerUp = Math.floor((powerUpLimit - Date.now())/1000) + 1;
-    if(remainingPowerUp > 1)
-        document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " seconds!";
-    else
-        document.getElementById("powerup").innerHTML = "Empowered for " + remainingPowerUp + " second!";
-    animateAmbientLight();
-    animateRendererColor();
-}
-
-function checkWinCondition(){
-    if(pointHitboxes.length == 0 && powerUpHitboxes.length == 0){
-        gameWon();
-        return true;
-    }else
-        return false;
-}
-
-function checkFruitSpawn(){
-    if(Date.now() < nextFruitSpawn)
-        return;
-
-    // Spawn a fruit
-    if(fruits.length == 3)
-        return;
-    console.log("Spawning fruit");
-    // Find a spawn location
-    for(var i = 0; i < fruitLocations.length; i++){
-        if(fruits.find((f) => 
-            f.position.x == fruitLocations[i].x && 
-            f.position.z == fruitLocations[i].z) == null){
-            const fruit = models.createFruit();
-            fruit.position.copy(fruitLocations[i]);
-            sceneElements.sceneGraph.add(fruit);
-            fruits.push(fruit);
-            // Hitbox
-            const fruitHitbox = new THREE.Sphere(fruit.position, 0.25);
-            fruitHitboxes.push(fruitHitbox);
-            playFruitSpawnSound();
-            break;
-        }
-    }    
-    nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
-}
-
-function killPacman(){
-    playPacmanDeadSound();
-    powerUpLimit = 0;
-    isAlive = false;
-    gamePaused = true;
-    if(lives <= 0){
-        gameOver();
-        return;
-    }
-
-    lives --;
-    console.log("Lives: " + lives);
-    ghosts.forEach((ghost) => {
-        ghost.position.copy(ghostSpawnPoint);
-        if(ghost.isDead)
-            ghost.setAlive(); 
-    });
-
-    document.getElementById("dead-menu").style.visibility = "visible";
-    document.getElementById("lives").innerHTML = "Lives: " + lives;
-    if(lives == 0)
-        document.getElementById("lives").style.color = "red";
-    deathTimer = Date.now() + DEATH_TIMER;
-}
-
-function respawn(){
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    isAlive = true;
-    gamePaused = false;
-    pacman.position.copy(pacmanSpawnPoint);
-    playRespawnSound();
-    document.getElementById("dead-menu").style.visibility = "hidden";
-}
-
-function killGhost(ghost){
-    playGhostDeadSound();
-    // Increase score
-    ghostKills++;
-    addPoints(ghostKills*200);
-    // Ghost died
-    ghost.setDead();
-    // Create Path to spawn point
-    const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-    const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
-    ghost.position.x = blockCenter.x;
-    ghost.position.z = blockCenter.z;
-    ghost.path = [];
-}
-
-
-function gameOver(){
-    playGameLostSound();
-    document.exitPointerLock();
-    gameIsOver = true;
-    document.getElementById("game-over").style.visibility = "visible";
-    document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
-}
-
-function gameWon(){
-    playGameWonSound();
-    document.exitPointerLock();
-    gameIsOver = true;
-    gamePaused = true;
-    levelN++;
-    document.getElementById("win-menu").style.visibility = "visible";
-}
-
-function nextLevel(){
-    restartGame();
-}
-
-function addPoints(n){
-    points += n;
-    document.getElementById("score").innerHTML = "Points: " + points;
-    console.log("Points: " + points);
-}
-
-function activatePowerUp(){
-    sceneElements.renderer.setClearColor('rgb(100, 255, 200)', 0.4);
-
-    // Make ghosts scared
-    ghosts.forEach((ghost) => {
-        if(!ghost.isDead){
-            ghost.setScared();
-            const mapCoords = getCoords(ghost.position.x, ghost.position.z);
-            const blockCenter = getBlockCenter(mapCoords.x, mapCoords.z);
-            ghost.position.x = blockCenter.x;
-            ghost.position.z = blockCenter.z;
-            ghost.path = [];
-        }
-    })
-
-    if(poweredUp){
-        powerUpLimit += POWERUP_DURATION;
-        return;
-    }
-    poweredUp = true;
-    // Increase Pacman's speed
-    const pacman = sceneElements.sceneGraph.getObjectByName("pacman");
-    pacman.MOV_SPEED_X *= POWERUP_SPEED;
-    pacman.MOV_SPEED_Z *= POWERUP_SPEED;
-
-    powerUpLimit = Date.now() + POWERUP_DURATION;
-}
-
-function clearGame(){
-    // Removes models and hitboxes
-    sceneElements.sceneGraph.clear();
-    wallMeshes = []; 
-    portals = [];
-    ghostHitboxes = [];
-    pointHitboxes = [];
-    powerUpHitboxes = [];
-    fruitHitboxes = [];
-    fruitLocations = [];
-    fruits = [];
-    document.getElementById("win-menu").style.visibility = "hidden";
-    document.getElementById("game-over").style.visibility = "hidden";
-    document.getElementById("score").innerHTML = "";
-    document.getElementById("timer").innerHTML = "";
-    document.getElementById("lives").innerHTML = "";
-}
-
-// ************************** //
-// HUD events
-// ************************** //
-
-function startGame(){
-    if(!gameIsReady)
-        return;
-    console.log("Starting game");
-    document.getElementById("start-menu").style.visibility = "hidden";
-    document.getElementById("score").innerHTML = "Points: " + points;
-    document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
-    document.getElementById("lives").innerHTML = "Lives: " + lives;
-    document.getElementById("lives").style.color = "aliceblue";
-    gamePaused = false;
-    element.requestPointerLock();
-    playRespawnSound();
-}
-
-function pauseGame(){
-    if(!isAlive)
-        return;
-    console.log("Pausing game");
-    document.exitPointerLock();
-    gamePaused = true;
-    document.getElementById("pause-menu").style.visibility = "visible";
-}
-
-function restartGame(){
-    console.log("Restarting game");
-    powerUpLimit = 0;
-    checkPowerUp();
-    loadLevel(levelMapName);
-}
-
-function continueGame(){
-    console.log("Unpausing game");
-    gamePaused = false;
-    document.getElementById("pause-menu").style.visibility = "hidden";
-    element.requestPointerLock();
-}
-
-function leaveGame(){
-    console.log("Leaving game");
-    powerUpLimit = 0;
-    checkPowerUp();
-    clearGame();
-    document.getElementById("win-menu").style.visibility = "hidden";
-    document.getElementById("game-over").style.visibility = "hidden";
-    document.getElementById("pause-menu").style.visibility = "hidden";
-    document.getElementById("score").innerHTML = "";
-    document.getElementById("timer").innerHTML = "";
-    document.getElementById("lives").innerHTML = "";
-    document.getElementById("main-menu").style.visibility = "visible";
-    document.getElementById("side-menu").style.visibility = "visible";
-    document.getElementById("side-menu2").style.visibility = "visible";
-}
-
-function loadGameLevel(){
-    const baseName = "map-";
-    document.getElementById("main-menu").style.visibility = "hidden";
-    document.getElementById("side-menu").style.visibility = "hidden";
-    document.getElementById("side-menu2").style.visibility = "hidden";
-    for(var i = 1; i <= levels.howManyLevels(); i++){
-        if(document.getElementById(baseName + i).classList.contains("active")){
-            loadLevel(levels.getLevelNameByNum(i));
-            break;
-        }
-    }
-    
-}
-
-function openGameModelsMenu(){
-    
-}
-
-function toggleDynamicCamera(event){
-    if (event.currentTarget.checked)
-        dynamicCamera = true;
-    else
-        dynamicCamera = false;
-}
-
-function toggleMouseRotation(event){
-    if (event.currentTarget.checked)
-        mouseRotation = true;
-    else
-        mouseRotation = false;
-}
-
-function changeSensitivity(event){
-    sensitivityX = event.target.value / 10000;
-}
-
-function changeVolume(event){
-    soundVolume = event.target.value;
-    document.getElementById("volume-label").innerHTML = "Volume: " + Math.floor(soundVolume * 100);
-  
 }

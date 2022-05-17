@@ -5,6 +5,14 @@
 // This module requires game.js
 
 const verticalAxis = new THREE.Vector3(0, 1, 0);
+// Movement properties
+const MOVE_UP = { movement: "UP", xBias: 0, zBias: 1, rotationAngle: 0};
+const MOVE_DOWN = { movement: "DOWN", xBias: 0, zBias: -1, rotationAngle: -Math.PI};
+const MOVE_LEFT = { movement: "LEFT", xBias: 1, zBias: 0, rotationAngle: Math.PI / 2};
+const MOVE_RIGHT = { movement: "RIGHT", xBias: -1, zBias: 0, rotationAngle: -Math.PI / 2};
+const MOVE_DIRECTIONS = [MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT];
+const ROTATION_ERROR = Math.PI/100;
+const POSITION_ERROR = 0.1;
 
 function movePacman(){
     const pacman = sceneElements.sceneGraph.getObjectByName("pacman");

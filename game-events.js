@@ -191,6 +191,7 @@ function clearGame(){
     fruitHitboxes = [];
     fruitLocations = [];
     fruits = [];
+    lightSources = [];
     document.getElementById("win-menu").style.visibility = "hidden";
     document.getElementById("game-over").style.visibility = "hidden";
     document.getElementById("score").innerHTML = "";

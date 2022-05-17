@@ -96,7 +96,7 @@ const level = [];
 var levelMapName = "";
 var totalPortals = 0;
 // Useful variables that allow the check of near lights
-const lightSources = [];
+var lightSources = [];
 const LIGHT_CHECK_DELAY = 200;
 var nextLightCheck = 0;
 var closestLightName = "";
@@ -412,6 +412,7 @@ function loadLevel(levelName){
     totalPortals = portalsN;
 
     nextFruitSpawn = Date.now() + FRUIT_SPAWN_INTERVAL;
+    nextLightCheck = 0;
 
     poweredUp = false;
     ghostKills = 0;

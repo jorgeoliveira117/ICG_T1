@@ -37,7 +37,7 @@ function startGame(){
     if(!gameIsReady)
         return;
     console.log("Starting game");
-    document.getElementById("start-menu").style.visibility = "hidden";
+    document.getElementById("start-menu").style.display = "none";
     document.getElementById("score").innerHTML = "Points: " + points;
     document.getElementById("timer").innerHTML = "Time: " + Math.floor(gameTimer);
     document.getElementById("lives").innerHTML = "Lives: " + lives;
@@ -53,7 +53,7 @@ function pauseGame(){
     console.log("Pausing game");
     document.exitPointerLock();
     gamePaused = true;
-    document.getElementById("pause-menu").style.visibility = "visible";
+    document.getElementById("pause-menu").style.display = "block";
 }
 
 function restartGame(){
@@ -66,7 +66,7 @@ function restartGame(){
 function continueGame(){
     console.log("Unpausing game");
     gamePaused = false;
-    document.getElementById("pause-menu").style.visibility = "hidden";
+    document.getElementById("pause-menu").style.display = "none";
     element.requestPointerLock();
 }
 
@@ -75,22 +75,22 @@ function leaveGame(){
     powerUpLimit = 0;
     checkPowerUp();
     clearGame();
-    document.getElementById("win-menu").style.visibility = "hidden";
-    document.getElementById("game-over").style.visibility = "hidden";
-    document.getElementById("pause-menu").style.visibility = "hidden";
+    document.getElementById("win-menu").style.display = "none";
+    document.getElementById("game-over").style.display = "none";
+    document.getElementById("pause-menu").style.display = "none";
     document.getElementById("score").innerHTML = "";
     document.getElementById("timer").innerHTML = "";
     document.getElementById("lives").innerHTML = "";
-    document.getElementById("main-menu").style.visibility = "visible";
-    document.getElementById("side-menu").style.visibility = "visible";
-    document.getElementById("side-menu2").style.visibility = "visible";
+    document.getElementById("main-menu").style.display = "block";
+    document.getElementById("side-menu").style.display = "block";
+    document.getElementById("side-menu2").style.display = "block";
 }
 
 function loadGameLevel(){
     const baseName = "map-";
-    document.getElementById("main-menu").style.visibility = "hidden";
-    document.getElementById("side-menu").style.visibility = "hidden";
-    document.getElementById("side-menu2").style.visibility = "hidden";
+    document.getElementById("main-menu").style.display = "none";
+    document.getElementById("side-menu").style.display = "none";
+    document.getElementById("side-menu2").style.display = "none";
     for(var i = 1; i <= levels.howManyLevels(); i++){
         if(document.getElementById(baseName + i).classList.contains("active")){
             loadLevel(levels.getLevelNameByNum(i));

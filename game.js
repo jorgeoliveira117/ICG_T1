@@ -418,7 +418,7 @@ function loadLevel(levelName){
     ghostKills = 0;
     points = 0;
     isAlive = true;
-    document.getElementById("start-menu").style.visibility = "visible";
+    document.getElementById("start-menu").style.display = "block";
     document.getElementById("start-menu-difficulty").innerHTML = "Difficulty: " + levelN;
 
     lives = 3;

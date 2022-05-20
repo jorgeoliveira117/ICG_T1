@@ -94,7 +94,7 @@ function killPacman(){
             ghost.setAlive(); 
     });
 
-    document.getElementById("dead-menu").style.visibility = "visible";
+    document.getElementById("dead-menu").style.display = "block";
     document.getElementById("lives").innerHTML = "Lives: " + lives;
     if(lives == 0)
         document.getElementById("lives").style.color = "red";
@@ -107,7 +107,7 @@ function respawn(){
     gamePaused = false;
     pacman.position.copy(pacmanSpawnPoint);
     playRespawnSound();
-    document.getElementById("dead-menu").style.visibility = "hidden";
+    document.getElementById("dead-menu").style.display = "none";
 }
 
 function killGhost(ghost){
@@ -129,7 +129,7 @@ function gameOver(){
     playGameLostSound();
     document.exitPointerLock();
     gameIsOver = true;
-    document.getElementById("game-over").style.visibility = "visible";
+    document.getElementById("game-over").style.display = "block";
     document.getElementById("game-over-points").innerHTML = "You finished with " + points + " points!";
 }
 
@@ -139,7 +139,7 @@ function gameWon(){
     gameIsOver = true;
     gamePaused = true;
     levelN++;
-    document.getElementById("win-menu").style.visibility = "visible";
+    document.getElementById("win-menu").style.display = "block";
 }
 
 function nextLevel(){
@@ -192,8 +192,8 @@ function clearGame(){
     fruitLocations = [];
     fruits = [];
     lightSources = [];
-    document.getElementById("win-menu").style.visibility = "hidden";
-    document.getElementById("game-over").style.visibility = "hidden";
+    document.getElementById("win-menu").style.display = "none";
+    document.getElementById("game-over").style.display = "none";
     document.getElementById("score").innerHTML = "";
     document.getElementById("timer").innerHTML = "";
     document.getElementById("lives").innerHTML = "";
